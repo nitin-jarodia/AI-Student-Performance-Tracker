@@ -1,39 +1,24 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo } from 'react'
+import toast from 'react-hot-toast'
 
 const ToastContext = createContext(null)
 
+/**
+ * Legacy compatibility shim over react-hot-toast.
+ * All existing pages call `showToast(message, type)` — we preserve that API
+ * but route it through the polished hot-toast renderer registered in App.jsx.
+ */
 export function ToastProvider({ children }) {
-  const [toast, setToast] = useState(null)
-  const timerRef = useRef(null)
-
   const showToast = useCallback((message, type = 'success') => {
-    if (timerRef.current) window.clearTimeout(timerRef.current)
-    setToast({ id: Date.now(), message, type })
-    timerRef.current = window.setTimeout(() => setToast(null), 4200)
+    if (!message) return
+    if (type === 'error') return toast.error(message)
+    if (type === 'warning') return toast(message, { icon: '⚠️' })
+    if (type === 'loading') return toast.loading(message)
+    return toast.success(message)
   }, [])
 
   const value = useMemo(() => ({ showToast }), [showToast])
-
-  const styles =
-    toast?.type === 'error'
-      ? 'border-red-200 bg-red-50 text-red-900'
-      : toast?.type === 'warning'
-        ? 'border-amber-200 bg-amber-50 text-amber-950'
-        : 'border-emerald-200 bg-emerald-50 text-emerald-950'
-
-  return (
-    <ToastContext.Provider value={value}>
-      {children}
-      {toast && (
-        <div
-          className={`fixed bottom-6 right-6 z-[200] max-w-sm rounded-xl border px-4 py-3 text-sm font-medium shadow-lg animate-fade-in ${styles}`}
-          role="status"
-        >
-          {toast.message}
-        </div>
-      )}
-    </ToastContext.Provider>
-  )
+  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
 }
 
 export function useToast() {

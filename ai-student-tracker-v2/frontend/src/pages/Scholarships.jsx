@@ -124,8 +124,8 @@ export default function Scholarships() {
   return (
     <div className="animate-fade-in mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-slate-900">Scholarships</h1>
-        <p className="mt-1 text-sm text-slate-500">Define schemes, evaluate eligibility, and audit student matches.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Scholarships</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Define schemes, evaluate eligibility, and audit student matches.</p>
       </div>
 
       <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100 p-1">

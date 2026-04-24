@@ -1,23 +1,42 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  BarChart3,
+  Sparkles,
+  ShieldCheck,
+  Loader2,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-
-const MailIcon = () => (
-  <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-  </svg>
-)
-
-const LockIcon = () => (
-  <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-  </svg>
-)
+import { cn } from '../lib/cn'
 
 function redirectForRole(role) {
   if (role === 'student') return '/student-dashboard'
   return '/dashboard'
 }
+
+const features = [
+  {
+    icon: BarChart3,
+    title: 'AI-powered insights',
+    desc: 'Real-time class health, risk detection, and predictive analytics.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Automated reports',
+    desc: 'Generate narrative feedback and parent-ready PDFs in seconds.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Secure by design',
+    desc: 'JWT authentication, role-based access, and audit logging.',
+  },
+]
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -25,7 +44,8 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [forgotOpen, setForgotOpen] = useState(false)
+  const [shake, setShake] = useState(0)
+  const formRef = useRef(null)
 
   const { user, login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
@@ -39,11 +59,14 @@ export default function Login() {
     return <Navigate to={target} replace />
   }
 
+  const triggerShake = () => setShake((v) => v + 1)
+
   const handleSubmit = async (e) => {
     e?.preventDefault?.()
     setError('')
     if (!email.trim() || !password) {
       setError('Please enter both email and password.')
+      triggerShake()
       return
     }
     try {
@@ -54,63 +77,188 @@ export default function Login() {
       navigate(target, { replace: true })
     } catch (err) {
       setError(err?.message || 'Login failed. Please try again.')
+      triggerShake()
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-700 to-slate-900">
-      <div className="pointer-events-none absolute -left-32 top-20 h-72 w-72 rounded-full bg-sky-400/30 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-fuchsia-500/20 blur-3xl" />
+    <div className="min-h-screen bg-surface-secondary">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        {/* Left — hero panel */}
+        <div className="relative hidden overflow-hidden bg-slate-950 lg:flex">
+          {/* Animated mesh gradient */}
+          <div className="absolute inset-0 bg-login-mesh" aria-hidden="true" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.25),transparent_60%)]" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
-        <div className="card mb-8 overflow-hidden border-0 shadow-2xl shadow-indigo-950/40">
-          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-10 text-center text-white">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-3xl shadow-lg backdrop-blur">
-              🎓
-            </div>
-            <h1 className="font-heading text-2xl font-bold tracking-tight">
-              AI Student Performance Tracker
-            </h1>
-            <p className="mt-2 text-sm text-indigo-100/90">
-              Sign in to continue. Admins create teacher and student accounts.
-            </p>
-          </div>
+          {/* Floating particles */}
+          {Array.from({ length: 16 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute h-1.5 w-1.5 rounded-full bg-white/30"
+              style={{
+                left: `${(i * 53) % 100}%`,
+                top: `${(i * 37) % 100}%`,
+              }}
+              animate={{
+                y: [0, -20, 0],
+                opacity: [0.3, 0.8, 0.3],
+              }}
+              transition={{
+                duration: 4 + (i % 5),
+                repeat: Infinity,
+                delay: i * 0.2,
+              }}
+              aria-hidden="true"
+            />
+          ))}
 
-          <form className="p-8" onSubmit={handleSubmit}>
-            {error && (
-              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {error}
+          <div className="relative z-10 flex w-full flex-col justify-between p-12 text-white">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 shadow-inner-glow backdrop-blur">
+                  <GraduationCap className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <span className="text-sm font-semibold tracking-tight">
+                  AI Student Tracker
+                </span>
               </div>
-            )}
+            </div>
 
-            <div className="space-y-4">
+            <div className="max-w-md">
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.6 }}
+                className="text-balance text-4xl font-bold leading-tight tracking-tight xl:text-5xl"
+              >
+                The AI co-pilot for{' '}
+                <span className="bg-gradient-to-r from-cyan-300 to-brand-300 bg-clip-text text-transparent">
+                  modern classrooms
+                </span>
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="mt-4 text-base text-slate-300"
+              >
+                Track performance, spot at-risk students early, and deliver insight-driven
+                reports — without the spreadsheets.
+              </motion.p>
+
+              <div className="mt-10 space-y-4">
+                {features.map((f, i) => {
+                  const Icon = f.icon
+                  return (
+                    <motion.div
+                      key={f.title}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + i * 0.1, duration: 0.45 }}
+                      className="flex items-start gap-3"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-cyan-300 ring-1 ring-white/10 backdrop-blur">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{f.title}</p>
+                        <p className="mt-0.5 text-sm text-slate-400">{f.desc}</p>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 text-xs text-slate-400">
+              <span>React · FastAPI · Scikit-learn</span>
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                All systems operational
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right — form */}
+        <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="w-full max-w-md"
+          >
+            <div className="mb-8 flex items-center gap-3 lg:hidden">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-glow-sm">
+                <GraduationCap className="h-6 w-6" aria-hidden="true" />
+              </div>
               <div>
-                <label className="label" htmlFor="login-email">Email</label>
+                <p className="text-base font-semibold text-slate-900">AI Student Tracker</p>
+                <p className="text-xs text-slate-500">Performance & risk insights</p>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+                Welcome back
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Sign in to continue. Admins create teacher and student accounts.
+              </p>
+            </div>
+
+            <motion.form
+              key={shake}
+              ref={formRef}
+              onSubmit={handleSubmit}
+              animate={shake > 0 ? { x: [0, -8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mt-8 space-y-5"
+            >
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800"
+                  role="alert"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <div>
+                <label className="label" htmlFor="login-email">
+                  Email
+                </label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-                    <MailIcon />
-                  </span>
+                  <Mail
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                    aria-hidden="true"
+                  />
                   <input
                     id="login-email"
                     type="email"
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@school.com"
-                    className="input pl-11"
+                    placeholder="you@school.com"
+                    className="input pl-10"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="label" htmlFor="login-password">Password</label>
+                <label className="label" htmlFor="login-password">
+                  Password
+                </label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-                    <LockIcon />
-                  </span>
+                  <Lock
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                    aria-hidden="true"
+                  />
                   <input
                     id="login-password"
                     type={showPw ? 'text' : 'password'}
@@ -118,55 +266,44 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Your password"
-                    className="input pl-11 pr-24"
+                    className="input px-10"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50"
+                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
                   >
-                    {showPw ? 'Hide' : 'Show'}
+                    {showPw ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </button>
                 </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary mt-6 flex w-full items-center justify-center gap-2 py-3 text-base disabled:opacity-60"
-            >
-              {loading ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white/80" />
-                  Signing in…
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
-
-            <div className="mt-4 text-right">
               <button
-                type="button"
-                onClick={() => setForgotOpen((v) => !v)}
-                className="text-xs font-semibold text-indigo-600 hover:underline"
+                type="submit"
+                disabled={loading}
+                className={cn('btn-primary w-full py-3 text-base', loading && 'opacity-70')}
               >
-                Forgot password?
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Signing in…
+                  </>
+                ) : (
+                  'Sign in'
+                )}
               </button>
-            </div>
 
-            {forgotOpen && (
-              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                Contact your administrator to reset your password.
-              </div>
-            )}
-
-            <p className="mt-8 text-center text-xs text-slate-400">
-              Secured with JWT • No third-party auth providers
-            </p>
-          </form>
+              <p className="text-center text-xs text-slate-400">
+                Secured with JWT · No third-party auth providers
+              </p>
+            </motion.form>
+          </motion.div>
         </div>
       </div>
     </div>

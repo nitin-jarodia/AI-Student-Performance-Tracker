@@ -86,8 +86,8 @@ export default function QRAttendance() {
   return (
     <div className="animate-fade-in mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-slate-900">QR attendance</h1>
-        <p className="mt-1 text-sm text-slate-500">Project the code — students open the scan URL on their phones.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">QR attendance</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Project the code — students open the scan URL on their phones.</p>
       </div>
 
       <div className="card grid gap-4 p-6 md:grid-cols-3">

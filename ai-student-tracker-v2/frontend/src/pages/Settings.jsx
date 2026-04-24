@@ -66,8 +66,8 @@ export default function Settings() {
   return (
     <div className="animate-fade-in mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-slate-900">ML & model registry</h1>
-        <p className="mt-1 text-sm text-slate-500">Training jobs and active checkpoint selection (admin only)</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">ML & model registry</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Training jobs and active checkpoint selection (admin only).</p>
       </div>
 
       {loading ? (

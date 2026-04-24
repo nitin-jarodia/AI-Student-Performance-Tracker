@@ -70,7 +70,7 @@ export default function AcademicIntegrity() {
     <div className="animate-fade-in mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-slate-900">Academic integrity</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Academic integrity</h1>
           <p className="mt-1 text-sm text-slate-500">
             Detect similar score vectors and unusual jumps for a given exam sitting.
           </p>

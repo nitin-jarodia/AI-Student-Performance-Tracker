@@ -66,8 +66,8 @@ export default function Reports() {
   return (
     <div className="animate-fade-in mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-slate-900">AI reports</h1>
-        <p className="mt-1 text-sm text-slate-500">One-click narrative feedback powered by your gradebook data</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">AI reports</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">One-click narrative feedback powered by your gradebook data.</p>
       </div>
 
       <div className="card p-6">

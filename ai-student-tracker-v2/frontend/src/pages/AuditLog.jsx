@@ -54,8 +54,8 @@ export default function AuditLog() {
   return (
     <div className="animate-fade-in mx-auto max-w-7xl space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-slate-900">Audit log</h1>
-        <p className="mt-1 text-sm text-slate-500">Immutable record of administrative and teaching actions</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Audit log</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Immutable record of administrative and teaching actions.</p>
       </div>
 
       <div className="card flex flex-wrap items-end gap-4 p-4">
