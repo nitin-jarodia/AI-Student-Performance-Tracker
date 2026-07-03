@@ -47,21 +47,35 @@ def _load_user(db: Session, user_id: int) -> User:
     return user
 
 
+def _resolve_access_token(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials],
+) -> Optional[str]:
+    """Bearer header when present; otherwise HttpOnly cookie (browser sessions)."""
+    if credentials and credentials.credentials:
+        return credentials.credentials.strip()
+    cookie_token = request.cookies.get("access_token")
+    if cookie_token and cookie_token.strip():
+        return cookie_token.strip()
+    return None
+
+
 def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> CurrentUser:
     """
-    Validate the Authorization Bearer access token and return a ``CurrentUser``.
+    Validate the access token (HttpOnly cookie or Bearer header) and return a ``CurrentUser``.
 
     Raises 401 when the token is missing / expired / tampered with, or when the
     user record has been deleted. Raises 403 when the account is deactivated.
     """
-    if credentials is None or not credentials.credentials:
+    access_token = _resolve_access_token(request, credentials)
+    if not access_token:
         raise _unauthorized("Not authenticated")
 
-    payload = verify_token(credentials.credentials.strip(), expected_type=TOKEN_TYPE_ACCESS)
+    payload = verify_token(access_token, expected_type=TOKEN_TYPE_ACCESS)
 
     sub = payload.get("sub")
     try:
@@ -99,13 +113,15 @@ def get_current_user(
 
 
 def get_current_user_row(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
     """Same validation as ``get_current_user`` but returns the ORM ``User`` row."""
-    if credentials is None or not credentials.credentials:
+    access_token = _resolve_access_token(request, credentials)
+    if not access_token:
         raise _unauthorized("Not authenticated")
-    payload = verify_token(credentials.credentials.strip(), expected_type=TOKEN_TYPE_ACCESS)
+    payload = verify_token(access_token, expected_type=TOKEN_TYPE_ACCESS)
     sub = payload.get("sub")
     try:
         user_id = int(sub) if sub is not None else None

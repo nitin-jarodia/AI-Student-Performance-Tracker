@@ -38,6 +38,30 @@ from app.services.subject_seed import ensure_fixed_subjects
 log = logging.getLogger(__name__)
 
 
+def _cors_origins() -> list[str]:
+    origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+    ]
+    for url in (settings.FRONTEND_BASE_URL, settings.APP_URL):
+        if url:
+            normalized = url.rstrip("/")
+            if normalized not in origins:
+                origins.append(normalized)
+    if settings.CORS_ORIGINS:
+        for part in settings.CORS_ORIGINS.split(","):
+            normalized = part.strip().rstrip("/")
+            if normalized and normalized not in origins:
+                origins.append(normalized)
+    return origins
+
+
 # ── Startup-time safety checks (import time) ─────────────────────────────────
 
 if len(settings.SECRET_KEY or "") < 32:
@@ -138,14 +162,7 @@ async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=_cors_origins(),
     allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],

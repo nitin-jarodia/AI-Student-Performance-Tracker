@@ -24,7 +24,16 @@ class Settings(BaseSettings):
     SCHOOL_NAME: str = "Your School Name"
     FRONTEND_BASE_URL: str = "http://localhost:5173"
     APP_URL: str = "http://localhost:5173"
+    CORS_ORIGINS: str = ""  # comma-separated extra origins for production
     DEBUG: bool = False
+
+    # HttpOnly cookie auth (tokens also accepted via Authorization header for tests/API clients)
+    COOKIE_SECURE: bool = False
+    COOKIE_SAME_SITE: str = "lax"
+
+    # Optional Redis cache (analytics); empty = in-process only
+    REDIS_URL: str = ""
+    CACHE_TTL_ANALYTICS: int = 300
 
     # Email (SMTP) - optional; alerts degrade to log-only when missing
     SMTP_HOST: str = "smtp.gmail.com"

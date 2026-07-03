@@ -3,7 +3,48 @@
 Full-stack app for tracking, analyzing, and predicting K-12 student performance.
 Backend: FastAPI + PostgreSQL + SQLAlchemy + scikit-learn.
 Frontend: React (Vite) + TailwindCSS + Recharts.
-Auth: JWT (access + refresh rotation, bcrypt hashing, slowapi rate limiting).
+Auth: JWT in HttpOnly cookies (access + refresh rotation, bcrypt hashing, slowapi rate limiting).
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TB
+  subgraph client [Browser]
+    UI[React + Vite + Tailwind]
+    RQ[TanStack Query]
+    UI --> RQ
+  end
+
+  subgraph api [FastAPI Backend]
+    Auth[JWT + HttpOnly cookies]
+    RBAC[Role guards]
+    ML[RandomForest + rule fallback]
+    Cache[Redis analytics cache]
+    Auth --> RBAC
+    RBAC --> ML
+    ML --> Cache
+  end
+
+  subgraph data [Data layer]
+    PG[(PostgreSQL)]
+    RD[(Redis optional)]
+  end
+
+  RQ -->|HTTPS + credentials| Auth
+  Cache --> RD
+  RBAC --> PG
+  ML --> PG
+```
+
+| Layer | Stack |
+|-------|-------|
+| Frontend | React 18, Vite, Tailwind, Recharts, TanStack Query |
+| Backend | FastAPI, SQLAlchemy, Alembic, scikit-learn |
+| Auth | HttpOnly cookies + Bearer fallback for tests |
+| Cache | Redis (optional) for `/ml/class-analytics` |
+| Deploy | Docker Compose locally; `render.yaml` for cloud |
 
 ---
 
@@ -143,6 +184,7 @@ Classic JWT flow with **access + refresh rotation**.
 
 Security notes:
 - Passwords hashed with bcrypt (`passlib[bcrypt]`).
+- Access + refresh tokens stored in **HttpOnly cookies** (not localStorage); Bearer header still works for tests/API clients.
 - `/auth/login` and `/auth/refresh` are rate-limited via `slowapi`.
 - Deactivated accounts cannot log in.
 - Refresh-token rotation: any reuse of a previously rotated token is rejected.
@@ -179,6 +221,7 @@ Notes:
 - Migrations run in the backend container entrypoint before Uvicorn starts.
 - `SKIP_AUTO_MIGRATE=1` in compose avoids double-running Alembic in app lifespan.
 - Default admin is seeded when `SEED_DEFAULT_ADMIN=true` (change password after first login).
+- Redis is included for analytics caching (`REDIS_URL=redis://redis:6379/0`).
 
 Stop:
 
@@ -215,9 +258,19 @@ Environment variables used in tests:
 ### GitHub Actions
 
 `.github/workflows/ci.yml` runs on every push/PR:
-1. **backend-tests** — migrations + pytest with coverage
+1. **backend-tests** — pytest with coverage + **ruff** lint
 2. **frontend-build** — `npm ci && npm run build`
 3. **docker-build** — verifies backend and frontend Docker images build
+
+### Pre-commit (optional)
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+Runs **ruff** on `backend/` before each commit.
 
 Add this badge to your README after the first green run:
 
@@ -238,12 +291,35 @@ Target result: `25/25 passed`.
 
 ---
 
-## 9. Project layout
+## 9. Cloud deployment (Render)
+
+One-click blueprint: [`render.yaml`](render.yaml) provisions Postgres, the Dockerized API, and a static frontend.
+
+1. Fork/push this repo to GitHub.
+2. In [Render Dashboard](https://dashboard.render.com/) → **New** → **Blueprint** → connect the repo.
+3. Set sync-false env vars after first deploy:
+   - **API** `FRONTEND_BASE_URL`, `APP_URL`, `CORS_ORIGINS` → your static site URL
+   - **Web** `VITE_API_URL` → your API URL (rebuild required)
+4. Optional: add a Render Redis instance and set `REDIS_URL` on the API service.
+
+**Railway** alternative: deploy `backend/Dockerfile` + managed Postgres; point `VITE_API_URL` at the public API URL when building the frontend.
+
+After deploy, add your live demo URL here:
+
+```markdown
+Live demo: https://your-frontend.onrender.com
+```
+
+---
+
+## 10. Project layout
 
 ```
 ai-student-tracker-v2/
 ├── .github/workflows/ci.yml        # GitHub Actions (pytest + build + docker)
-├── docker-compose.yml              # Postgres + backend + frontend
+├── render.yaml                     # Render Blueprint (Postgres + API + static web)
+├── docker-compose.yml              # Postgres + Redis + backend + frontend
+├── .pre-commit-config.yaml         # ruff hooks for backend
 ├── backend/
 │   ├── Dockerfile
 │   ├── docker-entrypoint.sh        # alembic upgrade + uvicorn
@@ -263,8 +339,9 @@ ai-student-tracker-v2/
 ├── frontend/
 │   ├── Dockerfile                  # Vite build + nginx
 │   ├── nginx.conf
-│   ├── src/context/AuthContext.jsx # JWT context
-│   ├── src/services/api.js         # axios + refresh interceptor
+│   ├── src/hooks/useDashboardData.js # TanStack Query dashboard fetch
+│   ├── src/context/AuthContext.jsx # cookie-based auth context
+│   ├── src/services/api.js         # axios + cookie credentials + refresh
 │   └── .env.example
 ├── ml_models/                      # pickled classifiers
 ├── setup.bat / setup.sh            # one-shot installer
@@ -274,7 +351,7 @@ ai-student-tracker-v2/
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Symptom                                               | Fix                                                                        |
 |-------------------------------------------------------|----------------------------------------------------------------------------|
@@ -286,8 +363,10 @@ ai-student-tracker-v2/
 | `alembic upgrade head` fails with "can't locate..."   | Run it from `backend/` (the directory containing `alembic.ini`).           |
 | Docker backend exits immediately                      | Check `docker compose logs backend`; verify Postgres is healthy.           |
 | pytest fails with DB connection error                 | Create `ai_student_tracker_test` and set `TEST_DATABASE_URL`.              |
+| Login works in Swagger but not the React app            | Set `FRONTEND_BASE_URL` / CORS; frontend must use `withCredentials` (built-in). |
+| Cookies not sent cross-origin in production             | Set `COOKIE_SECURE=true`, HTTPS on both sides, and matching CORS origins.    |
 
 ---
 
-## 11. Developer
+## 12. Developer
 **Nitin Jarodia** — GitHub [@nitin-jarodia](https://github.com/nitin-jarodia)

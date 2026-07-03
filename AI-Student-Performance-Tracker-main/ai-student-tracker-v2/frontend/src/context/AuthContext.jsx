@@ -5,7 +5,6 @@ import {
   authAPI,
   clearSession,
   formatAxiosError,
-  getAccessToken,
   getStoredUser,
   saveSession,
 } from '../services/api'
@@ -31,22 +30,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   const initializeAuth = useCallback(async () => {
-    const token = getAccessToken()
-    if (!token) {
-      setUser(null)
-      setLoading(false)
-      return
-    }
     try {
       const { data } = await authAPI.me()
       const fresh = normalizeUser(data)
       setUser(fresh)
-      try {
-        localStorage.setItem('user', JSON.stringify(fresh))
-      } catch (_) {}
+      saveSession({ user: fresh })
     } catch (_) {
-      // Token invalid / expired and refresh failed — the axios interceptor will
-      // already have cleared the session. Reflect that in React state.
       clearSession()
       setUser(null)
     } finally {
@@ -62,11 +51,7 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await authAPI.login(email, password)
       const fresh = normalizeUser(data.user)
-      saveSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        user: fresh,
-      })
+      saveSession({ user: fresh })
       setUser(fresh)
       return fresh
     } catch (err) {

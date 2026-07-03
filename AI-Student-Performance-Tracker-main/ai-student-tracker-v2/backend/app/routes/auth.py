@@ -2,12 +2,13 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.core.cookies import REFRESH_COOKIE, clear_auth_cookies, set_auth_cookies
 from app.core.rate_limit import limiter
 from app.core.security import (
     TOKEN_TYPE_REFRESH,
@@ -42,7 +43,7 @@ class LoginPayload(BaseModel):
 
 
 class RefreshPayload(BaseModel):
-    refresh_token: str = Field(..., min_length=10)
+    refresh_token: Optional[str] = Field(None, min_length=10)
 
 
 class ChangePasswordPayload(BaseModel):
@@ -183,7 +184,12 @@ def _authenticate(db: Session, email: str, password: str) -> User:
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit(settings.RATE_LIMIT_LOGIN)
-def login(payload: LoginPayload, request: Request, db: Session = Depends(get_db)):
+def login(
+    payload: LoginPayload,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     """
     JSON login. Returns ``{access_token, refresh_token, token_type, user}``.
 
@@ -191,6 +197,7 @@ def login(payload: LoginPayload, request: Request, db: Session = Depends(get_db)
     """
     user = _authenticate(db, payload.email, payload.password)
     tokens = _issue_tokens(db, user)
+    set_auth_cookies(response, tokens["access_token"], tokens["refresh_token"])
     log_action(
         user.email,
         (user.role or ROLE_TEACHER).lower(),
@@ -206,12 +213,14 @@ def login(payload: LoginPayload, request: Request, db: Session = Depends(get_db)
 @limiter.limit("10/minute")
 def login_oauth2_form(
     request: Request,
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
     """OAuth2 password flow (x-www-form-urlencoded) — used by the FastAPI docs button."""
     user = _authenticate(db, form_data.username, form_data.password)
     tokens = _issue_tokens(db, user)
+    set_auth_cookies(response, tokens["access_token"], tokens["refresh_token"])
     log_action(
         user.email,
         (user.role or ROLE_TEACHER).lower(),
@@ -229,13 +238,24 @@ def login_oauth2_form(
 
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit(settings.RATE_LIMIT_REFRESH)
-def refresh(payload: RefreshPayload, request: Request, db: Session = Depends(get_db)):
+def refresh(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    payload: Optional[RefreshPayload] = Body(None),
+):
     """
     Rotate tokens. The submitted refresh token must match the one stored on the
     user row (token rotation defence). A fresh refresh token is issued and
     persisted; the old one is invalidated implicitly.
     """
-    claims = verify_token(payload.refresh_token, expected_type=TOKEN_TYPE_REFRESH)
+    refresh_token = (payload.refresh_token if payload and payload.refresh_token else None) or request.cookies.get(
+        REFRESH_COOKIE
+    )
+    if not refresh_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token required")
+
+    claims = verify_token(refresh_token, expected_type=TOKEN_TYPE_REFRESH)
     sub = claims.get("sub")
     try:
         user_id = int(sub) if sub is not None else None
@@ -247,12 +267,14 @@ def refresh(payload: RefreshPayload, request: Request, db: Session = Depends(get
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account no longer valid")
-    if not user.refresh_token or user.refresh_token != payload.refresh_token:
+    if not user.refresh_token or user.refresh_token != refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token has been revoked",
         )
-    return _issue_tokens(db, user)
+    tokens = _issue_tokens(db, user)
+    set_auth_cookies(response, tokens["access_token"], tokens["refresh_token"])
+    return tokens
 
 
 # ── /auth/logout ────────────────────────────────────────────────────────────
@@ -261,6 +283,7 @@ def refresh(payload: RefreshPayload, request: Request, db: Session = Depends(get
 @router.post("/logout")
 def logout(
     request: Request,
+    response: Response,
     current: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -269,6 +292,7 @@ def logout(
     if user:
         user.refresh_token = None
         db.commit()
+    clear_auth_cookies(response)
     log_action(
         current.email,
         current.role,

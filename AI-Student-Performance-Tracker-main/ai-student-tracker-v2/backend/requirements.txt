@@ -51,3 +51,6 @@ scipy==1.15.3
 
 # Model explainability hooks for ML insights
 shap==0.52.0
+
+# Optional Redis cache for analytics endpoints
+redis==5.2.1

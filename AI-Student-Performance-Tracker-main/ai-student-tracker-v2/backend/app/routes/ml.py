@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies.auth import CurrentUser, require_admin, require_teacher
 from app.models.models import Attendance, Performance, Student, Subject
@@ -17,6 +18,7 @@ from app.ml.predict import (
 from app.ml.train_model import train_performance_model, train_on_real_data
 from app.services.ai_service import generate_student_report
 from app.services.audit import client_ip_from_request, log_action
+from app.services.cache import cached_json
 from app.services.rbac import ROLE_ADMIN
 from app.services.learning_style_service import classify_all_students
 
@@ -53,15 +55,19 @@ def train_model(request: Request, user: CurrentUser = Depends(require_admin)):
 @router.get("/learning-style-stats")
 def learning_style_stats(db: Session = Depends(get_db), _: CurrentUser = Depends(require_teacher)):
     """Counts per ``students.learning_style`` for dashboard charts."""
-    rows = (
-        db.query(Student.learning_style, func.count(Student.id))
-        .group_by(Student.learning_style)
-        .all()
-    )
-    dist = []
-    for label, cnt in rows:
-        dist.append({"style": label or "Unclassified", "count": int(cnt)})
-    return {"distribution": dist}
+
+    def _load():
+        rows = (
+            db.query(Student.learning_style, func.count(Student.id))
+            .group_by(Student.learning_style)
+            .all()
+        )
+        dist = []
+        for label, cnt in rows:
+            dist.append({"style": label or "Unclassified", "count": int(cnt)})
+        return {"distribution": dist}
+
+    return cached_json("ml:learning-style-stats", settings.CACHE_TTL_ANALYTICS, _load)
 
 
 @router.post("/classify-learning-styles")
@@ -111,51 +117,55 @@ def get_class_analytics(db: Session = Depends(get_db), _: CurrentUser = Depends(
     """
     Class-wide analytics including ``risk_factor_distribution`` (primary concern counts).
 
-    Authenticated teacher/admin.
+    Authenticated teacher/admin. Cached in Redis when ``REDIS_URL`` is configured.
     """
-    students = db.query(Student).all()
-    students_data = []
-    primary_rows = []
 
-    for student in students:
-        records = db.query(Performance).filter(Performance.student_id == student.id).all()
-        att_records = db.query(Attendance).filter(Attendance.student_id == student.id).all()
+    def _load():
+        students = db.query(Student).all()
+        students_data = []
+        primary_rows = []
 
-        if records:
-            scores = [(r.score / r.max_score) * 100 for r in records]
-            avg = sum(scores) / len(scores)
-            failed = sum(1 for s in scores if s < 40)
-            mid = len(scores) // 2
-            if mid > 0:
-                trend = sum(scores[mid:]) / (len(scores) - mid) - sum(scores[:mid]) / mid
+        for student in students:
+            records = db.query(Performance).filter(Performance.student_id == student.id).all()
+            att_records = db.query(Attendance).filter(Attendance.student_id == student.id).all()
+
+            if records:
+                scores = [(r.score / r.max_score) * 100 for r in records]
+                avg = sum(scores) / len(scores)
+                failed = sum(1 for s in scores if s < 40)
+                mid = len(scores) // 2
+                if mid > 0:
+                    trend = sum(scores[mid:]) / (len(scores) - mid) - sum(scores[:mid]) / mid
+                else:
+                    trend = 0.0
             else:
+                avg = 0
+                failed = 0
                 trend = 0.0
-        else:
-            avg = 0
-            failed = 0
-            trend = 0.0
 
-        if att_records:
-            present = sum(1 for a in att_records if a.status in ("present", "late"))
-            attendance = present / len(att_records) * 100
-        else:
-            attendance = 100.0
+            if att_records:
+                present = sum(1 for a in att_records if a.status in ("present", "late"))
+                attendance = present / len(att_records) * 100
+            else:
+                attendance = 100.0
 
-        prediction = predict_student_risk(avg, attendance, trend, failed)
-        expl = prediction.get("explanation") or {}
-        primary_rows.append({"primary_concern": expl.get("primary_concern", "Unknown")})
+            prediction = predict_student_risk(avg, attendance, trend, failed)
+            expl = prediction.get("explanation") or {}
+            primary_rows.append({"primary_concern": expl.get("primary_concern", "Unknown")})
 
-        students_data.append(
-            {
-                "avg_score": avg,
-                "attendance": attendance,
-                "risk_level": prediction["risk_level"],
-            }
-        )
+            students_data.append(
+                {
+                    "avg_score": avg,
+                    "attendance": attendance,
+                    "risk_level": prediction["risk_level"],
+                }
+            )
 
-    analytics = analyze_class_performance(students_data)
-    analytics["risk_factor_distribution"] = risk_factor_distribution_for_class(primary_rows)
-    return analytics
+        analytics = analyze_class_performance(students_data)
+        analytics["risk_factor_distribution"] = risk_factor_distribution_for_class(primary_rows)
+        return analytics
+
+    return cached_json("ml:class-analytics", settings.CACHE_TTL_ANALYTICS, _load)
 
 
 @router.get("/model-status")

@@ -1,55 +1,34 @@
-// services/api.js - FastAPI client with JWT auth, auto-refresh, and API helpers
+// services/api.js - FastAPI client with HttpOnly cookie auth + auto-refresh
 
 import axios from 'axios'
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
-// localStorage keys
-export const ACCESS_TOKEN_KEY = 'access_token'
-export const REFRESH_TOKEN_KEY = 'refresh_token'
+// User profile only — tokens live in HttpOnly cookies (not accessible to JS)
 export const USER_KEY = 'user'
-
-export function getAccessToken() {
-  try {
-    return localStorage.getItem(ACCESS_TOKEN_KEY) || ''
-  } catch (_) {
-    return ''
-  }
-}
-
-export function getRefreshToken() {
-  try {
-    return localStorage.getItem(REFRESH_TOKEN_KEY) || ''
-  } catch (_) {
-    return ''
-  }
-}
 
 export function getStoredUser() {
   try {
-    const raw = localStorage.getItem(USER_KEY)
+    const raw = sessionStorage.getItem(USER_KEY)
     return raw ? JSON.parse(raw) : null
   } catch (_) {
     return null
   }
 }
 
-export function saveSession({ access_token, refresh_token, user }) {
-  if (access_token) localStorage.setItem(ACCESS_TOKEN_KEY, access_token)
-  if (refresh_token) localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token)
-  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
+export function saveSession({ user }) {
+  if (user) sessionStorage.setItem(USER_KEY, JSON.stringify(user))
 }
 
 export function clearSession() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-  localStorage.removeItem(USER_KEY)
+  sessionStorage.removeItem(USER_KEY)
 }
 
 const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
+  withCredentials: true,
 })
 
 export function formatAxiosError(err, fallback = 'Request failed') {
@@ -67,28 +46,10 @@ export function formatAxiosError(err, fallback = 'Request failed') {
   return err?.message || fallback
 }
 
-// ── Request interceptor: inject Bearer token ─────────────────────────────
-api.interceptors.request.use((config) => {
-  const token = getAccessToken()
-  if (token) {
-    config.headers = config.headers || {}
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  // Let the browser set multipart boundaries for file uploads.
-  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
-    if (config.headers?.delete) config.headers.delete('Content-Type')
-    else if (config.headers) delete config.headers['Content-Type']
-  }
-  return config
-})
-
 // ── Response interceptor: transparent refresh on 401 ─────────────────────
 //
-// On the first 401 for an authenticated request we attempt a POST /auth/refresh
-// with the stored refresh token. All concurrent 401s wait for the same promise
-// so the refresh endpoint is hit at most once, then each request is retried
-// with the new access token. If refresh fails the session is cleared and the
-// user is redirected to /login.
+// On the first 401 for an authenticated request we attempt POST /auth/refresh
+// (refresh token sent via HttpOnly cookie). Concurrent 401s share one promise.
 
 let _refreshPromise = null
 
@@ -101,17 +62,18 @@ function _onAuthLost() {
 }
 
 async function _refreshTokens() {
-  const rt = getRefreshToken()
-  if (!rt) throw new Error('No refresh token')
   const resp = await axios.post(
     `${API_BASE}/auth/refresh`,
-    { refresh_token: rt },
-    { headers: { 'Content-Type': 'application/json' }, timeout: 15000 },
+    {},
+    {
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 15000,
+    },
   )
-  const { access_token, refresh_token, user } = resp.data || {}
-  if (!access_token) throw new Error('Refresh response missing access_token')
-  saveSession({ access_token, refresh_token, user })
-  return access_token
+  const { user } = resp.data || {}
+  if (user) saveSession({ user })
+  return true
 }
 
 api.interceptors.response.use(
@@ -132,18 +94,12 @@ api.interceptors.response.use(
             _refreshPromise = null
           })
         }
-        const newAccess = await _refreshPromise
-        original.headers = original.headers || {}
-        original.headers.Authorization = `Bearer ${newAccess}`
+        await _refreshPromise
         return api(original)
       } catch (refreshErr) {
         _onAuthLost()
         return Promise.reject(refreshErr)
       }
-    }
-
-    if (status === 401 && isAuthEndpoint) {
-      // Bad credentials / expired refresh - do not attempt refresh loop.
     }
 
     if (import.meta.env.DEV) {
@@ -160,7 +116,7 @@ export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (data) => api.post('/auth/register', data),
   registerStudent: (data) => api.post('/auth/register-student', data),
-  refresh: (refresh_token) => api.post('/auth/refresh', { refresh_token }),
+  refresh: () => api.post('/auth/refresh', {}),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   changePassword: (current_password, new_password) =>
@@ -168,21 +124,19 @@ export const authAPI = {
   listUsers: (role) => api.get('/auth/users', { params: role ? { role } : {} }),
   deactivateUser: (userId) => api.put(`/auth/users/${userId}/deactivate`),
   activateUser: (userId) => api.put(`/auth/users/${userId}/activate`),
-  // legacy aliases kept for older components
   getUsers: () => api.get('/auth/users'),
 }
 
-// Convenience helpers that match the wording used in the migration spec.
 export const loginUser = (email, password) => authAPI.login(email, password)
 export const registerUser = (email, password, full_name, role) =>
   authAPI.register({ email, password, full_name, role })
 export const logoutUser = () => authAPI.logout()
-export const refreshToken = (rt) => authAPI.refresh(rt)
+export const refreshToken = () => authAPI.refresh()
 export const getCurrentUser = () => authAPI.me()
 export const changePassword = (current_password, new_password) =>
   authAPI.changePassword(current_password, new_password)
 
-// ── Domain APIs (unchanged) ──────────────────────────────────────────────
+// ── Domain APIs ──────────────────────────────────────────────────────────────
 
 export const studentAPI = {
   getAll: (params) => api.get('/students/', { params }),

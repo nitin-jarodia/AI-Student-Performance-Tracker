@@ -51,6 +51,10 @@ jobs:
           SEED_DEFAULT_ADMIN: "true"
         run: pytest tests/ -v --cov=app --cov-report=term-missing
 
+      - name: Ruff lint
+        working-directory: backend
+        run: ruff check app tests
+
   frontend-build:
     runs-on: ubuntu-latest
 

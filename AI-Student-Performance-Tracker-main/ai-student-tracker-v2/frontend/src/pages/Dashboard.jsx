@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -20,7 +21,8 @@ import {
   CheckCircle2,
   Activity,
 } from 'lucide-react'
-import { performanceAPI, studentAPI, subjectAPI } from '../services/api'
+import { performanceAPI } from '../services/api'
+import { useDashboardData } from '../hooks/useDashboardData'
 import { RiskPieChart, ScoreTrendChart, Sparkline } from '../components/Charts'
 import { useToast } from '../context/ToastContext'
 import AddScoreModal from '../components/dashboard/AddScoreModal'
@@ -188,13 +190,15 @@ function genSpark(seed) {
 export default function Dashboard() {
   const { showToast } = useToast()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
-  const [summary, setSummary] = useState(null)
-  const [dayAtt, setDayAtt] = useState(null)
-  const [students, setStudents] = useState([])
-  const [subjects, setSubjects] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { data, isLoading, isError, refetch } = useDashboardData()
+  const summary = data?.summary ?? null
+  const dayAtt = data?.dayAtt ?? null
+  const students = data?.students ?? []
+  const subjects = data?.subjects ?? []
+  const loading = isLoading
+  const error = isError ? 'Could not reach the API. Start FastAPI on port 8000, then retry.' : null
 
   const [modalScore, setModalScore] = useState(false)
   const [modalAtt, setModalAtt] = useState(false)
@@ -202,29 +206,9 @@ export default function Dashboard() {
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const [sumRes, dayRes, stRes, subRes] = await Promise.all([
-        performanceAPI.getAllSummary(),
-        performanceAPI.getDayAttendanceSummary(),
-        studentAPI.getAll(),
-        subjectAPI.getAll(),
-      ])
-      setSummary(sumRes.data)
-      setDayAtt(dayRes.data)
-      setStudents(stRes.data.students || [])
-      setSubjects(subRes.data.subjects || [])
-    } catch {
-      setError('Could not reach the API. Start FastAPI on port 8000, then retry.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+    await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    await refetch()
+  }, [queryClient, refetch])
 
   const rows = summary?.students || []
 
