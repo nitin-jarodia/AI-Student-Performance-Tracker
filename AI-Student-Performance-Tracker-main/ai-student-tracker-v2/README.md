@@ -160,7 +160,72 @@ The seeded account is marked `must_change_password=True`, so it must change this
 
 ---
 
-## 7. Running the self-tests
+## 7. Docker (one-command stack)
+
+Run PostgreSQL + API + frontend together:
+
+```bash
+# from repo root
+cp .env.docker.example .env   # optional — override SECRET_KEY
+docker compose up --build
+```
+
+URLs:
+- Frontend: http://localhost:8080
+- API:      http://localhost:8000
+- Docs:     http://localhost:8000/docs
+
+Notes:
+- Migrations run in the backend container entrypoint before Uvicorn starts.
+- `SKIP_AUTO_MIGRATE=1` in compose avoids double-running Alembic in app lifespan.
+- Default admin is seeded when `SEED_DEFAULT_ADMIN=true` (change password after first login).
+
+Stop:
+
+```bash
+docker compose down
+# docker compose down -v   # also removes the Postgres volume
+```
+
+---
+
+## 8. Automated tests & CI
+
+### Pytest (backend)
+
+```bash
+# create a dedicated test database once (PostgreSQL)
+createdb ai_student_tracker_test
+
+cd backend
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/ -v --cov=app
+```
+
+The test client bootstraps schema on first run (Alembic + additive reconcile), so a separate migration step is not required for tests.
+
+Environment variables used in tests:
+
+| Key | Example |
+|-----|---------|
+| `TEST_DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/ai_student_tracker_test` |
+| `SECRET_KEY` | any string ≥ 32 chars |
+| `SEED_DEFAULT_ADMIN` | `true` |
+
+### GitHub Actions
+
+`.github/workflows/ci.yml` runs on every push/PR:
+1. **backend-tests** — migrations + pytest with coverage
+2. **frontend-build** — `npm ci && npm run build`
+3. **docker-build** — verifies backend and frontend Docker images build
+
+Add this badge to your README after the first green run:
+
+```markdown
+![CI](https://github.com/YOUR_USER/YOUR_REPO/actions/workflows/ci.yml/badge.svg)
+```
+
+### Live integration suite (optional)
 
 A 25-check integration suite lives at `backend/scripts/phase4_tests.py`.
 
@@ -169,17 +234,21 @@ A 25-check integration suite lives at `backend/scripts/phase4_tests.py`.
 python scripts/phase4_tests.py
 ```
 
-It exercises health, auth (login / register / refresh / logout), RBAC, pagination,
-validation, performance & attendance (incl. duplicate-day guard), ML prediction,
-and the AI report endpoint. Target result: `25/25 passed`.
+Target result: `25/25 passed`.
 
 ---
 
-## 8. Project layout
+## 9. Project layout
 
 ```
 ai-student-tracker-v2/
+├── .github/workflows/ci.yml        # GitHub Actions (pytest + build + docker)
+├── docker-compose.yml              # Postgres + backend + frontend
 ├── backend/
+│   ├── Dockerfile
+│   ├── docker-entrypoint.sh        # alembic upgrade + uvicorn
+│   ├── tests/                      # pytest suite
+│   ├── requirements-dev.txt
 │   ├── app/
 │   │   ├── main.py                 # FastAPI app + lifespan (migrations, seed admin)
 │   │   ├── core/                   # security, rate_limit, permissions, db_migrate
@@ -192,6 +261,8 @@ ai-student-tracker-v2/
 │   ├── scripts/phase4_tests.py     # 25-check integration suite
 │   └── .env.example
 ├── frontend/
+│   ├── Dockerfile                  # Vite build + nginx
+│   ├── nginx.conf
 │   ├── src/context/AuthContext.jsx # JWT context
 │   ├── src/services/api.js         # axios + refresh interceptor
 │   └── .env.example
@@ -203,7 +274,7 @@ ai-student-tracker-v2/
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                               | Fix                                                                        |
 |-------------------------------------------------------|----------------------------------------------------------------------------|
@@ -213,8 +284,10 @@ ai-student-tracker-v2/
 | AI report returns a boilerplate string                | `OPENAI_API_KEY` is empty / invalid — the template fallback is expected.   |
 | Attendance POST returns 400 "already marked"          | One record per `(student_id, date)` is enforced by design.                 |
 | `alembic upgrade head` fails with "can't locate..."   | Run it from `backend/` (the directory containing `alembic.ini`).           |
+| Docker backend exits immediately                      | Check `docker compose logs backend`; verify Postgres is healthy.           |
+| pytest fails with DB connection error                 | Create `ai_student_tracker_test` and set `TEST_DATABASE_URL`.              |
 
 ---
 
-## 10. Developer
+## 11. Developer
 **Nitin Jarodia** — GitHub [@nitin-jarodia](https://github.com/nitin-jarodia)

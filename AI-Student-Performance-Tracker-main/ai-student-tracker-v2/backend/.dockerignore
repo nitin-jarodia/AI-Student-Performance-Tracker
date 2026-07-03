@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.pytest_cache/
+htmlcov/
+.coverage
+ml_models/*.pkl
+scripts/
+tests/
