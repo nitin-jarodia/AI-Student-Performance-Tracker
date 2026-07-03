@@ -55,7 +55,11 @@ export default function Login() {
   const nextPath = params.get('next') || ''
 
   if (isAuthenticated && user) {
-    const target = nextPath && nextPath.startsWith('/') ? nextPath : redirectForRole(user.role)
+    const target = user.must_change_password
+      ? '/change-password'
+      : nextPath && nextPath.startsWith('/')
+        ? nextPath
+        : redirectForRole(user.role)
     return <Navigate to={target} replace />
   }
 
@@ -72,8 +76,11 @@ export default function Login() {
     try {
       setLoading(true)
       const fresh = await login(email.trim(), password)
-      const target =
-        nextPath && nextPath.startsWith('/') ? nextPath : redirectForRole(fresh.role)
+      const target = fresh.must_change_password
+        ? '/change-password'
+        : nextPath && nextPath.startsWith('/')
+          ? nextPath
+          : redirectForRole(fresh.role)
       navigate(target, { replace: true })
     } catch (err) {
       setError(err?.message || 'Login failed. Please try again.')

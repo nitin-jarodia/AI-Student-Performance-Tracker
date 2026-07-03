@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -48,6 +48,7 @@ def _load_user(db: Session, user_id: int) -> User:
 
 
 def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> CurrentUser:
@@ -75,12 +76,25 @@ def get_current_user(
     if role not in ALL_ROLES:
         role = ROLE_TEACHER
 
+    must_change_password = bool(getattr(user, "must_change_password", False))
+    allowed_while_forced = {
+        "/auth/me",
+        "/auth/logout",
+        "/auth/change-password",
+    }
+    if must_change_password and request.url.path not in allowed_while_forced:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Password change required before continuing",
+        )
+
     return CurrentUser(
         email=user.email,
         role=role,
         user_id=user.id,
         full_name=user.full_name,
         student_id=user.student_id,
+        must_change_password=must_change_password,
     )
 
 

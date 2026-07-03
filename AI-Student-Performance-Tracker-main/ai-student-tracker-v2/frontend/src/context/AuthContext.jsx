@@ -21,6 +21,7 @@ function normalizeUser(raw) {
     role: (raw.role || 'teacher').toLowerCase(),
     student_id: raw.student_id ?? null,
     is_active: raw.is_active ?? true,
+    must_change_password: raw.must_change_password ?? false,
     created_at: raw.created_at || null,
   }
 }
@@ -84,11 +85,15 @@ export function AuthProvider({ children }) {
   }, [])
 
   const changePassword = useCallback(async (current_password, new_password) => {
-    const { data } = await authAPI.changePassword(current_password, new_password)
-    // Password change invalidates refresh token — force re-login locally.
-    clearSession()
-    setUser(null)
-    return data
+    try {
+      const { data } = await authAPI.changePassword(current_password, new_password)
+      // Password change invalidates refresh token — force re-login locally.
+      clearSession()
+      setUser(null)
+      return data
+    } catch (err) {
+      throw new Error(formatAxiosError(err, 'Password change failed'))
+    }
   }, [])
 
   const value = useMemo(() => {

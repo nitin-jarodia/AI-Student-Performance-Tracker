@@ -4,13 +4,14 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql://postgres:postgres123@localhost:5432/ai_student_tracker"
+    DATABASE_URL: str
 
     # JWT / auth
-    SECRET_KEY: str = "ai-student-tracker-secret-key-2025-change-me-in-production"
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    SEED_DEFAULT_ADMIN: bool = False
 
     # Rate limits (slowapi syntax e.g. "10/minute"). Defaults are dev-friendly;
     # tighten in production via backend/.env.
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     SCHOOL_NAME: str = "Your School Name"
     FRONTEND_BASE_URL: str = "http://localhost:5173"
     APP_URL: str = "http://localhost:5173"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     # Email (SMTP) - optional; alerts degrade to log-only when missing
     SMTP_HOST: str = "smtp.gmail.com"

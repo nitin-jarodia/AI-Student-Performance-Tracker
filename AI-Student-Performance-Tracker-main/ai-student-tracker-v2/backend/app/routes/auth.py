@@ -63,6 +63,7 @@ class UserPublic(BaseModel):
     full_name: str
     role: str
     is_active: bool
+    must_change_password: bool = False
     student_id: Optional[int] = None
     created_at: Optional[str] = None
 
@@ -85,6 +86,7 @@ def _serialize_user(user: User) -> dict:
         "full_name": user.full_name,
         "role": (user.role or ROLE_TEACHER).lower(),
         "is_active": bool(user.is_active),
+        "must_change_password": bool(getattr(user, "must_change_password", False)),
         "student_id": user.student_id,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
@@ -123,9 +125,14 @@ def _normalize_role(value: Optional[str], *, allowed: tuple = (ROLE_ADMIN, ROLE_
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
-def register(payload: RegisterPayload, request: Request, db: Session = Depends(get_db)):
+def register(
+    payload: RegisterPayload,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: CurrentUser = Depends(require_admin),
+):
     """
-    Create an admin / teacher / student user with a bcrypt-hashed password.
+    Admin-only: create an admin / teacher / student user with a bcrypt-hashed password.
 
     Returns the public user record. Duplicate emails return 400.
     """
@@ -140,18 +147,19 @@ def register(payload: RegisterPayload, request: Request, db: Session = Depends(g
         password=hash_password(payload.password),
         role=role,
         is_active=True,
+        must_change_password=True,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
     log_action(
-        user.email,
-        role,
+        admin.email,
+        admin.role,
         "AUTH_REGISTER",
         target_type="user",
         target_id=user.id,
-        detail={"role": role},
+        detail={"created_email": user.email, "role": role},
         ip_address=client_ip_from_request(request),
     )
     return _serialize_user(user)
@@ -305,6 +313,7 @@ def change_password(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
 
     user.password = hash_password(payload.new_password)
+    user.must_change_password = False
     user.refresh_token = None  # force re-login on other devices
     db.commit()
 
@@ -354,6 +363,7 @@ def register_student(
         existing.role = ROLE_STUDENT
         existing.student_id = payload.student_id
         existing.is_active = True
+        existing.must_change_password = True
         user = existing
     else:
         user = User(
@@ -363,6 +373,7 @@ def register_student(
             role=ROLE_STUDENT,
             student_id=payload.student_id,
             is_active=True,
+            must_change_password=True,
         )
         db.add(user)
     db.commit()

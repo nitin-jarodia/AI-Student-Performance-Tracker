@@ -29,6 +29,7 @@ import AuditLog from './pages/AuditLog'
 import Settings from './pages/Settings'
 import PortalView from './pages/PortalView'
 import Login from './pages/Login'
+import ChangePassword from './pages/ChangePassword'
 import Chatbot from './pages/Chatbot'
 import AcademicIntegrity from './pages/AcademicIntegrity'
 import Scholarships from './pages/Scholarships'
@@ -130,6 +131,14 @@ export default function App() {
             <Routes>
               {/* Public */}
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/change-password"
+                element={
+                  <ProtectedRoute>
+                    <ChangePassword />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/scan" element={<StudentScan />} />
               <Route path="/portal/view" element={<PortalView />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
@@ -211,10 +220,38 @@ export default function App() {
                   }
                 />
 
-                <Route path="/subjects" element={<Subjects />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/messages/:id" element={<Messages />} />
-                <Route path="/notifications" element={<Notifications />} />
+                <Route
+                  path="/subjects"
+                  element={
+                    <ProtectedRoute roles={['admin', 'teacher']}>
+                      <Subjects />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/messages"
+                  element={
+                    <ProtectedRoute roles={['admin', 'teacher', 'student']}>
+                      <Messages />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/messages/:id"
+                  element={
+                    <ProtectedRoute roles={['admin', 'teacher', 'student']}>
+                      <Messages />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <ProtectedRoute roles={['admin', 'teacher', 'student']}>
+                      <Notifications />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/alerts"
                   element={
@@ -248,8 +285,22 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/assistant" element={<Chatbot />} />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/assistant"
+                  element={
+                    <ProtectedRoute roles={['admin', 'teacher']}>
+                      <Chatbot />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/integrity"
                   element={
@@ -258,7 +309,14 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/scholarships" element={<Scholarships />} />
+                <Route
+                  path="/scholarships"
+                  element={
+                    <ProtectedRoute roles={['admin', 'teacher', 'student']}>
+                      <Scholarships />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/report-builder"
                   element={

@@ -22,6 +22,10 @@ export function ProtectedRoute({ children, roles }) {
     return <Navigate to={`/login?next=${next}`} replace />
   }
 
+  if (user?.must_change_password && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />
+  }
+
   if (roles && roles.length && !roles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />
   }

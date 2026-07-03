@@ -28,6 +28,7 @@ class CurrentUser:
     user_id: Optional[int] = None
     full_name: Optional[str] = None
     student_id: Optional[int] = None  # populated when role == student
+    must_change_password: bool = False
 
     @property
     def is_admin(self) -> bool:

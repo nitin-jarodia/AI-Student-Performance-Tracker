@@ -3,16 +3,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.config import settings
 
-# PostgreSQL connection URL from .env file
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres123@localhost:5432/ai_student_tracker"
-)
+# PostgreSQL connection URL from the validated application settings.
+DATABASE_URL = settings.DATABASE_URL
 
 # Create database engine
 engine = create_engine(

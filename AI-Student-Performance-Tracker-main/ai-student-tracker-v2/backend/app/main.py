@@ -52,7 +52,10 @@ DEFAULT_ADMIN_PASSWORD = "Admin@123"
 
 
 def _ensure_default_admin() -> None:
-    """Ensure at least one admin account exists so the system is reachable."""
+    """Optionally seed a local-dev admin account when explicitly enabled."""
+    if not settings.SEED_DEFAULT_ADMIN:
+        return
+
     db = SessionLocal()
     try:
         existing = db.query(models.User).filter(models.User.role == "admin").first()
@@ -64,13 +67,13 @@ def _ensure_default_admin() -> None:
             password=hash_password(DEFAULT_ADMIN_PASSWORD),
             role="admin",
             is_active=True,
+            must_change_password=True,
         )
         db.add(admin_user)
         db.commit()
         log.warning(
-            "Default admin created: %s / %s — change this password immediately after first login!",
+            "Default admin created for local development: %s. Change the password immediately after first login.",
             DEFAULT_ADMIN_EMAIL,
-            DEFAULT_ADMIN_PASSWORD,
         )
     except Exception as exc:
         db.rollback()

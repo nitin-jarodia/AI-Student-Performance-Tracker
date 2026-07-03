@@ -14,7 +14,7 @@ Auth: JWT (access + refresh rotation, bcrypt hashing, slowapi rate limiting).
 ./start.sh     # (Windows: start.bat)  — boots backend on :8000 and frontend on :5173
 ```
 
-Default admin after first boot: `admin@school.com` / `Admin@123` (change it!).
+Optional local seed admin: `admin@school.com` / `Admin@123` only when `SEED_DEFAULT_ADMIN=True`.
 
 ---
 
@@ -103,6 +103,7 @@ URLs:
 | `ALGORITHM`                      | `HS256`                                                        |
 | `ACCESS_TOKEN_EXPIRE_MINUTES`    | `60`                                                           |
 | `REFRESH_TOKEN_EXPIRE_DAYS`      | `7`                                                            |
+| `SEED_DEFAULT_ADMIN`             | `False` (set `True` only for local first boot)                 |
 | `RATE_LIMIT_LOGIN`               | `60/minute`                                                    |
 | `RATE_LIMIT_REFRESH`             | `120/minute`                                                   |
 | `APP_URL`                        | `http://localhost:5173`                                        |
@@ -111,9 +112,9 @@ URLs:
 | `SMTP_HOST`/`SMTP_PORT`/`SMTP_EMAIL`/`SMTP_PASSWORD` | *(optional — email alerts)*                |
 | `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM_NUMBER` | *(optional — SMS alerts)*          |
 | `ALERT_COOLDOWN_HOURS`           | `24`                                                           |
-| `DEBUG`                          | `True`                                                         |
+| `DEBUG`                          | `False`                                                        |
 
-`SECRET_KEY` shorter than 32 characters → the server refuses to start.
+`DATABASE_URL` and `SECRET_KEY` are required. `SECRET_KEY` shorter than 32 characters → the server refuses to start.
 
 ### `frontend/.env`
 
@@ -134,7 +135,7 @@ Classic JWT flow with **access + refresh rotation**.
 | `POST /auth/logout`                | Clears the stored refresh token for the caller.                    |
 | `GET  /auth/me`                    | Current user profile.                                              |
 | `PUT  /auth/change-password`       | Also invalidates refresh tokens (logs out other devices).          |
-| `POST /auth/register`              | Creates an admin / teacher / student user.                         |
+| `POST /auth/register`              | *(admin)* Creates an admin / teacher / student user.               |
 | `POST /auth/register-student`      | *(admin)* Binds a login to an existing `students` row.             |
 | `GET  /auth/users?role=teacher`    | *(admin)* List users.                                              |
 | `PUT  /auth/users/{id}/deactivate` | *(admin)* Disable a login.                                         |
@@ -145,14 +146,17 @@ Security notes:
 - `/auth/login` and `/auth/refresh` are rate-limited via `slowapi`.
 - Deactivated accounts cannot log in.
 - Refresh-token rotation: any reuse of a previously rotated token is rejected.
+- Newly provisioned users must change their password before using the app.
+- User creation is admin-only; public role self-registration is disabled.
 - Use HTTPS in production.
 
-### Default admin (auto-seeded on first boot)
+### Default admin (local development only)
+Set `SEED_DEFAULT_ADMIN=True` in `backend/.env` before first boot if you need the local seed account:
 ```
 Email:    admin@school.com
 Password: Admin@123
 ```
-**Change this password immediately** via `PUT /auth/change-password`.
+The seeded account is marked `must_change_password=True`, so it must change this password before using the app.
 
 ---
 

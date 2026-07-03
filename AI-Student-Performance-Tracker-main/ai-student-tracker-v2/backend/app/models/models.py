@@ -28,6 +28,7 @@ class User(Base):
     password   = Column(String(255), nullable=False)
     role       = Column(String(50), nullable=False, default="teacher")
     is_active  = Column(Boolean, default=True)
+    must_change_password = Column(Boolean, nullable=False, default=False, server_default="false")
     # When role == "student" this links back to the students row owned by the account.
     student_id = Column(Integer, ForeignKey("students.id", ondelete="SET NULL"), nullable=True, index=True)
     # Latest issued refresh token (rotated on every /auth/refresh). Cleared on logout.
