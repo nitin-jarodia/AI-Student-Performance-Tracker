@@ -1,0 +1,6 @@
+{
+  "active_model": "synthetic",
+  "real_model_trained_at": null,
+  "real_model_students": 0,
+  "synthetic_model_accuracy": 0.9
+}

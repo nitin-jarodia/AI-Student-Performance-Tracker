@@ -1,0 +1,50 @@
+# requirements.txt - Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Web Framework
+fastapi==0.110.0
+uvicorn==0.27.1
+
+# PostgreSQL Database Driver
+psycopg2-binary==2.9.11
+sqlalchemy==2.0.36
+
+# Authentication
+passlib==1.7.4
+bcrypt==4.1.2
+python-jose==3.3.0
+python-multipart==0.0.9
+
+# AI & ML (pins chosen for Python 3.13 + Windows wheels; sklearn 1.4.x has no cp313 wheels)
+openai==1.12.0
+scikit-learn==1.6.1
+pandas==2.2.3
+numpy==2.2.2
+openpyxl==3.1.5
+xlsxwriter==3.2.2
+
+# Configuration
+python-dotenv==1.0.1
+pydantic-settings==2.2.1
+
+# Utilities
+httpx==0.27.0
+alembic==1.13.1
+
+# Rate limiting (login brute-force protection)
+slowapi==0.1.9
+
+# PDF reports (portal)
+reportlab==4.2.5
+
+# QR attendance
+qrcode[pil]==7.4.2
+
+# SMS alerts
+twilio==8.5.0
+
+# Similarity / probabilistic integrity analysis
+scipy==1.12.0
+
+# Model explainability hooks for ML insights
+shap==0.44.0
