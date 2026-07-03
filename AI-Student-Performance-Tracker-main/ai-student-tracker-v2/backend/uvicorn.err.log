@@ -1,0 +1,5 @@
+INFO:     Started server process [14640]
+INFO:     Waiting for application startup.
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 004 -> 005, widen qr_sessions.token to hold signed payload
