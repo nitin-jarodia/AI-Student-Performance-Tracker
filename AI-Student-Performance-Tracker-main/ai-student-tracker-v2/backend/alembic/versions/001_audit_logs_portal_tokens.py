@@ -1,7 +1,7 @@
 """audit_logs portal_tokens demo user seed
 
 Revision ID: 001
-Revises:
+Revises: 000
 Create Date: 2026-02-20
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
 revision: str = "001"
-down_revision: Union[str, None] = None
+down_revision: Union[str, None] = "000"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
