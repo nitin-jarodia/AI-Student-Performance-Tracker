@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_LOGIN: str = "60/minute"
     RATE_LIMIT_REFRESH: str = "120/minute"
 
-    OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
 
     APP_NAME: str = "AI Student Performance Tracker"
     SCHOOL_NAME: str = "Your School Name"

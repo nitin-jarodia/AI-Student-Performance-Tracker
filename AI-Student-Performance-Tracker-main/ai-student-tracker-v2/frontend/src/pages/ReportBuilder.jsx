@@ -25,7 +25,7 @@ const LIBRARY = [
   { id: 'risk', title: 'Risk assessment', preview: 'Latest AI risk signals' },
   { id: 'learning_style', title: 'Learning style', preview: 'Badge + classifier output' },
   { id: 'score_trend', title: 'Score trend chart', preview: 'Mini trend data' },
-  { id: 'ai_comments', title: 'AI comments', preview: 'GPT narrative if configured' },
+  { id: 'ai_comments', title: 'AI comments', preview: 'Gemini narrative if configured' },
 ]
 
 function SortableRow({ id, title, preview }) {

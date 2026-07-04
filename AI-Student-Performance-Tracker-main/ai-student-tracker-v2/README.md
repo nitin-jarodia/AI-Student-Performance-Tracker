@@ -149,7 +149,7 @@ URLs:
 | `RATE_LIMIT_REFRESH`             | `120/minute`                                                   |
 | `APP_URL`                        | `http://localhost:5173`                                        |
 | `SKIP_AUTO_MIGRATE`              | `0` (set `1` to skip startup alembic)                          |
-| `OPENAI_API_KEY`                 | *(optional — enables GPT reports; template fallback otherwise)* |
+| `GEMINI_API_KEY`                 | *(optional — enables Gemini reports; template fallback otherwise)* |
 | `SMTP_HOST`/`SMTP_PORT`/`SMTP_EMAIL`/`SMTP_PASSWORD` | *(optional — email alerts)*                |
 | `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM_NUMBER` | *(optional — SMS alerts)*          |
 | `ALERT_COOLDOWN_HOURS`           | `24`                                                           |
@@ -358,7 +358,7 @@ ai-student-tracker-v2/
 | `psycopg2 OperationalError` on startup                | Check `DATABASE_URL` in `backend/.env`; make sure Postgres is running.     |
 | `SECRET_KEY must be at least 32 characters`           | Put a long random string in `backend/.env`.                                |
 | Frontend shows "Network Error" on login               | Backend isn't running or `VITE_API_URL` points somewhere else.             |
-| AI report returns a boilerplate string                | `OPENAI_API_KEY` is empty / invalid — the template fallback is expected.   |
+| AI report returns a boilerplate string                | `GEMINI_API_KEY` is empty / invalid — the template fallback is expected.   |
 | Attendance POST returns 400 "already marked"          | One record per `(student_id, date)` is enforced by design.                 |
 | `alembic upgrade head` fails with "can't locate..."   | Run it from `backend/` (the directory containing `alembic.ini`).           |
 | Docker backend exits immediately                      | Check `docker compose logs backend`; verify Postgres is healthy.           |

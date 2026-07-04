@@ -261,7 +261,7 @@ def ml_generate_report(
 
     This mirrors ``/performance/{id}/report`` so clients that prefer the
     ``/ml`` namespace (and the project spec) can reach the same generator.
-    Falls back to the deterministic template when no OpenAI key is configured.
+    Falls back to the deterministic template when no Gemini key is configured.
     """
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:

@@ -15,8 +15,10 @@ bcrypt==4.1.2
 python-jose==3.3.0
 python-multipart==0.0.9
 
-# AI & ML (pins tested on Python 3.12.9 — Render runtime.txt)
-openai==1.12.0
+# AI — Google Gemini (reports + chatbot; free tier via Google AI Studio)
+google-generativeai==0.8.4
+
+# ML (pins tested on Python 3.12.9 — see runtime.txt)
 scikit-learn==1.6.1
 pandas==2.2.3
 numpy==2.2.2

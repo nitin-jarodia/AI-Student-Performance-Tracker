@@ -204,7 +204,7 @@ def root():
             "Role-based login (Admin / Teacher / Student)",
             "ML Risk Prediction",
             "AI Report Generation",
-            "AI Chatbot Assistant (GPT action planner)",
+            "AI Chatbot Assistant (Gemini action planner)",
             "Manual subject management (CRUD + soft delete)",
             "Teacher-subject assignments",
             "Low-grade email + SMS parent alerts",

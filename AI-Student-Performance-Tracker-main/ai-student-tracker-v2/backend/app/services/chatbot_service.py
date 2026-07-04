@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
@@ -12,34 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.models import Attendance, Performance, Prediction, Student, Subject
-from app.services.ai_service import OPENAI_API_KEY
-
-
-_PLACEHOLDER_MARKERS = (
-    "your-",
-    "your_",
-    "xxxx",
-    "****",
-    "here",
-    "placeholder",
-    "changeme",
-    "change-me",
-    "example",
-)
-
-
-def _openai_key_looks_valid(key: str | None) -> bool:
-    """Treat obvious placeholders (e.g. ``sk-your-***-here``) as not configured."""
-    if not key or not isinstance(key, str):
-        return False
-    k = key.strip()
-    if not k.startswith("sk-") or len(k) < 20:
-        return False
-    low = k.lower()
-    return not any(marker in low for marker in _PLACEHOLDER_MARKERS)
-
-
-# ── Heuristic planner (used when OpenAI is not configured) ───────────────────
+from app.services.gemini_client import GEMINI_API_KEY, generate_text, gemini_key_looks_valid
 
 _HEURISTIC_RULES: List[Tuple[re.Pattern, Dict[str, Any]]] = [
     # "attendance below 50%" / "less than 60%"
@@ -72,7 +44,7 @@ def _extract_class_section(text: str) -> Dict[str, Any]:
 
 
 def _heuristic_plan(message: str) -> Dict[str, Any]:
-    """Best-effort regex planner used when OpenAI isn't available."""
+    """Best-effort regex planner used when Gemini isn't available."""
     msg = message or ""
     for pattern, meta in _HEURISTIC_RULES:
         m = pattern.search(msg)
@@ -129,29 +101,22 @@ def _extract_json_blob(text: str) -> Dict[str, Any]:
 
 def plan_with_gpt(message: str) -> Tuple[Dict[str, Any], Optional[str]]:
     """Return (plan dict, error_message_if_unavailable)."""
-    if not _openai_key_looks_valid(OPENAI_API_KEY):
+    if not gemini_key_looks_valid(GEMINI_API_KEY):
         return (
             _heuristic_plan(message),
-            "AI assistant is running without an OpenAI key — using heuristic query matching.",
+            "AI assistant is running without a Gemini key — using heuristic query matching.",
         )
     try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=OPENAI_API_KEY)
-        resp = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": message},
-            ],
+        raw = generate_text(
+            prompt=message,
+            system_instruction=SYSTEM_PROMPT,
             temperature=0.2,
-            max_tokens=400,
+            max_output_tokens=400,
+            json_mode=True,
         )
-        raw = resp.choices[0].message.content or "{}"
         plan = _extract_json_blob(raw)
         return plan, None
-    except Exception as exc:
-        # Fall back to heuristic planner so the query still runs.
+    except Exception:
         return (
             _heuristic_plan(message),
             "AI planner unavailable — using heuristic query matching instead.",
@@ -163,29 +128,21 @@ def summarize_results_gpt(user_message: str, action: str, rows: List[Dict[str, A
     preview = rows[:30]
     payload = json.dumps({"action": action, "sample": preview}, default=str)[:12000]
 
-    if not _openai_key_looks_valid(OPENAI_API_KEY):
+    if not gemini_key_looks_valid(GEMINI_API_KEY):
         return (
-            f"Found {len(rows)} result(s) for `{action}`. Add OPENAI_API_KEY to backend/.env for richer narration.",
+            f"Found {len(rows)} result(s) for `{action}`. Add GEMINI_API_KEY to backend/.env for richer narration.",
             None,
         )
 
     try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=OPENAI_API_KEY)
-        resp = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Summarize query results for a teacher in 2-4 sentences. Be precise, friendly, mention counts.",
-                },
-                {"role": "user", "content": f"Question: {user_message}\nStructured rows:\n{payload}"},
-            ],
+        text = generate_text(
+            prompt=f"Question: {user_message}\nStructured rows:\n{payload}",
+            system_instruction=(
+                "Summarize query results for a teacher in 2-4 sentences. Be precise, friendly, mention counts."
+            ),
             temperature=0.4,
-            max_tokens=250,
+            max_output_tokens=250,
         )
-        text = resp.choices[0].message.content or ""
         return text.strip(), None
     except Exception:
         return (

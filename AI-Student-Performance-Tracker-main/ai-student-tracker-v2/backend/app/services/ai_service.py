@@ -1,67 +1,41 @@
 # services/ai_service.py - Phase 7: AI Report Generation
-# Uses OpenAI GPT if a *valid* key is configured, otherwise deterministic templates.
+# Uses Google Gemini when a valid key is configured, otherwise deterministic templates.
 
 import logging
-import os
 from datetime import datetime
-from dotenv import load_dotenv
 
-load_dotenv()
-
-log = logging.getLogger(__name__)
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_TIMEOUT_SECONDS = 30
-
-# Heuristic placeholder detection — many users leave values like
-# ``sk-your-key-here`` / ``sk-xxxx`` / ``sk-example`` in their .env which pass
-# a naive ``startswith("sk-")`` check but then fail at the OpenAI API layer,
-# leaking the raw error up to the UI. We treat anything that looks fake as
-# "unconfigured" and fall straight through to the deterministic template.
-_PLACEHOLDER_MARKERS = (
-    "your-", "your_", "xxxx", "****", "here",
-    "placeholder", "changeme", "change-me", "example",
+from app.services.gemini_client import (
+    GEMINI_API_KEY,
+    generate_text,
+    gemini_key_looks_valid,
 )
 
-
-def _openai_key_looks_valid(key: str | None) -> bool:
-    if not key or not isinstance(key, str):
-        return False
-    k = key.strip()
-    if not k.startswith("sk-") or len(k) < 20:
-        return False
-    low = k.lower()
-    return not any(marker in low for marker in _PLACEHOLDER_MARKERS)
+log = logging.getLogger(__name__)
 
 
 def generate_student_report(student_name: str, scores: list, subjects: list, avg: float = None) -> str:
     """
     Generate a personalized student performance report.
 
-    Uses OpenAI GPT when a valid key is configured; otherwise falls back to a
+    Uses Gemini when a valid key is configured; otherwise falls back to a
     deterministic template so the endpoint always returns a useful payload.
     """
     if avg is None:
         avg = sum(scores) / len(scores) if scores else 0
 
-    if _openai_key_looks_valid(OPENAI_API_KEY):
+    if gemini_key_looks_valid(GEMINI_API_KEY):
         try:
-            report = _generate_openai_report(student_name, scores, subjects, avg)
+            report = _generate_gemini_report(student_name, scores, subjects, avg)
             if report:
                 return report
         except Exception as exc:
-            # Never leak OpenAI errors to callers — log and fall through.
-            log.warning("openai_report_fallback err=%s", exc)
+            log.warning("gemini_report_fallback err=%s", exc)
 
     return _generate_template_report(student_name, scores, subjects, avg)
 
 
-def _generate_openai_report(student_name: str, scores: list, subjects: list, avg: float) -> str:
-    """Generate report using OpenAI GPT with a hard timeout."""
-    from openai import OpenAI
-
-    client = OpenAI(api_key=OPENAI_API_KEY, timeout=OPENAI_TIMEOUT_SECONDS)
-
+def _generate_gemini_report(student_name: str, scores: list, subjects: list, avg: float) -> str:
+    """Generate report using Gemini with a hard timeout."""
     subject_scores = "\n".join([
         f"  • {subj}: {score:.1f}%"
         for subj, score in zip(subjects, scores)
@@ -83,14 +57,11 @@ Write a detailed report with these sections:
 
 Keep it professional, specific, and encouraging. Around 300 words."""
 
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=600,
+    return generate_text(
+        prompt=prompt,
         temperature=0.7,
-        timeout=OPENAI_TIMEOUT_SECONDS,
+        max_output_tokens=600,
     )
-    return response.choices[0].message.content
 
 
 def _generate_template_report(student_name: str, scores: list, subjects: list, avg: float) -> str:
