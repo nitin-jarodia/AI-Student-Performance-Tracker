@@ -16,14 +16,20 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies.auth import CurrentUser, require_teacher
 from app.models.models import Attendance, QrScan, QrSession, Student, User
 
 router = APIRouter(prefix="/qr", tags=["QR Attendance"])
 
-QR_SECRET = os.getenv("QR_SESSION_SECRET", os.getenv("JWT_SECRET", "change-me-in-production"))
-_PUBLIC_SCAN_BASE = os.getenv("PUBLIC_SCAN_BASE_URL", "http://localhost:5173/scan")
+QR_SECRET = os.getenv("QR_SESSION_SECRET", settings.SECRET_KEY)
+
+
+def _public_scan_base() -> str:
+    if settings.PUBLIC_SCAN_BASE_URL:
+        return settings.PUBLIC_SCAN_BASE_URL.rstrip("/")
+    return f"{settings.FRONTEND_BASE_URL.rstrip('/')}/scan"
 
 
 class GenerateBody(BaseModel):
@@ -114,7 +120,7 @@ def generate_qr(
     db.commit()
     db.refresh(sess)
 
-    scan_url = f"{_PUBLIC_SCAN_BASE}?token={signed}"
+    scan_url = f"{_public_scan_base()}?token={signed}"
     png_b64 = _qr_png_b64(scan_url)
 
     return {

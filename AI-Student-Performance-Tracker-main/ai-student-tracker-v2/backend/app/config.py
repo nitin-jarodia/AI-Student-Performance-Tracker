@@ -1,10 +1,25 @@
 # config.py - Application Configuration
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+
+def _normalize_database_url(url: str) -> str:
+    """Render may supply postgres:// — SQLAlchemy + psycopg2 expect postgresql://."""
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    return url
 
 
 class Settings(BaseSettings):
     DATABASE_URL: str
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _fix_postgres_scheme(cls, value: str) -> str:
+        if isinstance(value, str):
+            return _normalize_database_url(value)
+        return value
 
     # JWT / auth
     SECRET_KEY: str
@@ -25,11 +40,12 @@ class Settings(BaseSettings):
     FRONTEND_BASE_URL: str = "http://localhost:5173"
     APP_URL: str = "http://localhost:5173"
     CORS_ORIGINS: str = ""  # comma-separated extra origins for production
+    PUBLIC_SCAN_BASE_URL: str = ""  # e.g. https://your-app.vercel.app/scan
     DEBUG: bool = False
 
     # HttpOnly cookie auth (tokens also accepted via Authorization header for tests/API clients)
     COOKIE_SECURE: bool = False
-    COOKIE_SAME_SITE: str = "lax"
+    COOKIE_SAME_SITE: str = "lax"  # use "none" when frontend/API are on different domains (Vercel + Render)
 
     # Optional Redis cache (analytics); empty = in-process only
     REDIS_URL: str = ""

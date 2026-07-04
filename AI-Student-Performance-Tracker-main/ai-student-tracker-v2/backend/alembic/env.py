@@ -28,10 +28,13 @@ if config.config_file_name is not None:
 
 
 def get_url() -> str:
-    return os.getenv(
+    url = os.getenv(
         "DATABASE_URL",
         "postgresql://postgres:postgres123@localhost:5432/ai_student_tracker",
     )
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
 
 
 def run_migrations_offline() -> None:

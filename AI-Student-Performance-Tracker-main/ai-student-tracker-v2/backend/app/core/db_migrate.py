@@ -17,8 +17,13 @@ _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
 
 def run_alembic_upgrade_head() -> None:
-    """Apply pending migrations to head (idempotent). Uses backend/.env for DATABASE_URL."""
-    load_dotenv(_BACKEND_ROOT / ".env")
+    """Apply pending migrations to head. Uses DATABASE_URL from the environment."""
+    env_file = _BACKEND_ROOT / ".env"
+    if env_file.is_file():
+        load_dotenv(env_file)
+
+    if not os.getenv("DATABASE_URL"):
+        raise RuntimeError("DATABASE_URL is not set — required for alembic migrations")
 
     ini_path = _BACKEND_ROOT / "alembic.ini"
     if not ini_path.is_file():
