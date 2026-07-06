@@ -47,7 +47,7 @@ Requires enough qualifying student rows (see API error if insufficient).
 - Training metadata (timestamp, student count, holdout metrics)
 
 `GET /ml/model-status` returns registry + whether each checkpoint file exists.  
-`GET /ml/model-metrics` returns evaluation metrics when available — see [ML_METRICS.md](ML_METRICS.md).
+`GET /ml/model-metrics` returns holdout evaluation metrics — see [ML_METRICS.md](ML_METRICS.md).
 
 ## Explainability
 

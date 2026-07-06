@@ -11,6 +11,7 @@ because the database does not store ground-truth risk labels — see inline comm
 
 from collections import Counter
 from datetime import datetime, timezone
+from typing import Any, Dict
 
 import numpy as np
 import pickle
@@ -26,6 +27,50 @@ from app.ml.predict import (
     rule_based_risk_class,
     write_model_registry,
 )
+
+
+def compute_holdout_metrics(y_true, y_pred) -> Dict[str, Any]:
+    """Accuracy, per-class precision/recall/F1, and confusion matrix for holdout evaluation."""
+    from sklearn.metrics import (
+        accuracy_score,
+        confusion_matrix,
+        precision_recall_fscore_support,
+    )
+
+    labels = [0, 1, 2]
+    label_names = ["LOW", "MEDIUM", "HIGH"]
+    accuracy = float(accuracy_score(y_true, y_pred))
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, zero_division=0
+    )
+    cm = confusion_matrix(y_true, y_pred, labels=labels).tolist()
+    per_class = {}
+    for idx, name in enumerate(label_names):
+        per_class[name] = {
+            "precision": round(float(precision[idx]), 4),
+            "recall": round(float(recall[idx]), 4),
+            "f1": round(float(f1[idx]), 4),
+            "support": int(support[idx]),
+        }
+    return {
+        "accuracy": round(accuracy, 4),
+        "per_class": per_class,
+        "confusion_matrix": cm,
+        "label_order": label_names,
+    }
+
+
+def _persist_metrics(registry_key: str, metrics: Dict[str, Any]) -> None:
+    reg = read_model_registry()
+    all_metrics = reg.get("metrics") or {}
+    all_metrics[registry_key] = {
+        **metrics,
+        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "label_source": "rule_derived_or_synthetic",
+    }
+    reg["metrics"] = all_metrics
+    write_model_registry(reg)
+
 
 def generate_training_data(n_samples=500):
     """
@@ -87,11 +132,10 @@ def train_performance_model():
     try:
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.model_selection import train_test_split
-        from sklearn.metrics import accuracy_score, classification_report
 
-        # Split data
+        stratify = y if len(set(y)) > 1 and min(Counter(y).values()) >= 2 else None
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
+            X, y, test_size=0.2, random_state=42, stratify=stratify
         )
 
         # Train model
@@ -104,13 +148,14 @@ def train_performance_model():
         )
         model.fit(X_train, y_train)
 
-        # Evaluate
-        y_pred   = model.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
+        # Evaluate holdout set
+        y_pred = model.predict(X_test)
+        holdout_metrics = compute_holdout_metrics(y_test, y_pred)
+        accuracy = holdout_metrics["accuracy"]
         print(f"[ML] Model accuracy (holdout): {accuracy:.2%}")
-        print("\n[ML] Classification report:")
-        print(classification_report(y_test, y_pred,
-              target_names=['LOW Risk', 'MEDIUM Risk', 'HIGH Risk']))
+        print("\n[ML] Holdout metrics:")
+        for cls, vals in holdout_metrics["per_class"].items():
+            print(f"  {cls}: P={vals['precision']:.2f} R={vals['recall']:.2f} F1={vals['f1']:.2f}")
 
         # Save model
         os.makedirs("ml_models", exist_ok=True)
@@ -126,6 +171,7 @@ def train_performance_model():
             if reg.get("active_model") != "real":
                 reg["active_model"] = "synthetic"
             write_model_registry(reg)
+            _persist_metrics("synthetic", holdout_metrics)
         except Exception:
             pass
 
@@ -155,7 +201,7 @@ def train_on_real_data(db: Session) -> dict:
     Saves ``ml_models/performance_model_real.pkl`` and prefers it via ``model_registry.json``.
     """
     from sklearn.ensemble import RandomForestClassifier
-    from sklearn.model_selection import cross_val_score
+    from sklearn.model_selection import cross_val_score, train_test_split
 
     students = db.query(Student).all()
     X_list = []
@@ -200,6 +246,15 @@ def train_on_real_data(db: Session) -> dict:
     scores_cv = cross_val_score(model, X, y, cv=5)
     accuracy_cv = float(scores_cv.mean())
 
+    stratify = y if len(set(y)) > 1 and min(Counter(y).values()) >= 2 else None
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=stratify
+    )
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    holdout_metrics = compute_holdout_metrics(y_test, y_pred)
+    holdout_metrics["cv_accuracy_mean"] = round(accuracy_cv, 4)
+
     model.fit(X, y)
 
     os.makedirs(os.path.dirname(MODEL_REAL_PATH) or ".", exist_ok=True)
@@ -219,12 +274,14 @@ def train_on_real_data(db: Session) -> dict:
     reg["real_model_students"] = len(X_list)
     reg["real_cv_accuracy"] = round(accuracy_cv, 4)
     write_model_registry(reg)
+    _persist_metrics("db_rule_labels", holdout_metrics)
 
     invalidate_model_cache()
     return {
         "students_used": len(X_list),
         "class_distribution": class_distribution,
         "accuracy_cv": round(accuracy_cv, 4),
+        "holdout_accuracy": holdout_metrics["accuracy"],
     }
 
 

@@ -207,6 +207,25 @@ def get_model_status(_: CurrentUser = Depends(require_teacher)):
     }
 
 
+@router.get("/model-metrics")
+def get_model_metrics(_: CurrentUser = Depends(require_teacher)):
+    """
+    Return holdout evaluation metrics from ``model_registry.json`` (if trained).
+
+    Labels are rule-derived or synthetic — see docs/ML_METRICS.md.
+    """
+    reg = read_model_registry()
+    metrics = reg.get("metrics") or {}
+    return {
+        "metrics": metrics,
+        "active_model": reg.get("active_model", "synthetic"),
+        "label_caveat": (
+            "Metrics measure fit to rule-derived or synthetic labels, "
+            "not ground-truth student outcomes."
+        ),
+    }
+
+
 @router.get("/predict/{student_id}")
 def ml_predict_student(
     student_id: int,
