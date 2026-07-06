@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import settings
+from app.core.rate_limit import limiter
 from app.database import get_db
 from app.dependencies.auth import CurrentUser, require_admin, require_teacher
 from app.models.models import Attendance, Performance, Student, Subject
@@ -26,6 +27,7 @@ router = APIRouter(prefix="/ml", tags=["Machine Learning"])
 
 
 @router.post("/train", summary="Train RandomForest on synthetic data (admin)")
+@limiter.limit("3/minute")
 def train_model(request: Request, user: CurrentUser = Depends(require_admin)):
     """
     Train the synthetic-data RandomForest model (admin-only).
@@ -86,6 +88,7 @@ def classify_learning_styles_route(
 
 
 @router.post("/train-real", summary="Train RandomForest on DB rows with rule-derived labels (admin)")
+@limiter.limit("3/minute")
 def train_real_data_route(request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(require_admin)):
     """
     Train RandomForest on live PostgreSQL rows (admin-only).

@@ -28,8 +28,7 @@ def test_teacher_can_generate_portal_link_and_access_me(
         },
     )
     assert created.status_code == 200, created.text
-    students = client.get("/students/", headers=admin_headers).json()["students"]
-    student_id = next(s["id"] for s in students if s["roll_number"] == roll)
+    student_id = created.json()["id"]
 
     link = client.post(
         "/portal/generate-link",

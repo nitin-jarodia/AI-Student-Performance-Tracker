@@ -2,10 +2,11 @@
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import limiter
 from app.database import get_db
 from app.dependencies.auth import CurrentUser, require_teacher
 from app.services.chatbot_service import execute_plan, plan_with_gpt, summarize_results_gpt
@@ -18,8 +19,10 @@ class ChatQueryBody(BaseModel):
 
 
 @router.post("/query")
+@limiter.limit("5/minute")
 def run_chatbot_query(
     body: ChatQueryBody,
+    request: Request,
     db: Session = Depends(get_db),
     _: CurrentUser = Depends(require_teacher),
 ) -> Dict[str, Any]:

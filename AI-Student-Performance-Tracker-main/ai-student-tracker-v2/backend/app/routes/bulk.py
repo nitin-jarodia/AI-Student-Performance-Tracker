@@ -10,6 +10,7 @@ import pandas as pd
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
+from app.core.rate_limit import enforce_rate_limit, limiter
 from app.dependencies.auth import CurrentUser, require_teacher
 from app.services.audit import client_ip_from_request, log_action
 from app.services.notification_service import dispatch_low_grade_alert_async
@@ -42,9 +43,19 @@ def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 async def read_file_to_dataframe(file: UploadFile) -> pd.DataFrame:
     raw = await file.read()
+    return _bytes_to_dataframe(raw, file.filename)
+
+
+def read_upload_to_dataframe(file: UploadFile) -> pd.DataFrame:
+    """Sync file read for routes that use slowapi decorators (async + File breaks FastAPI)."""
+    raw = file.file.read()
+    return _bytes_to_dataframe(raw, file.filename)
+
+
+def _bytes_to_dataframe(raw: bytes, filename: str | None) -> pd.DataFrame:
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file")
-    name = (file.filename or "").lower()
+    name = (filename or "").lower()
     bio = BytesIO(raw)
     try:
         if name.endswith(".csv"):
@@ -321,7 +332,7 @@ async def preview_students(
 
 
 @router.post("/upload-scores", summary="Import validated score rows from Excel/CSV")
-async def upload_scores(
+def upload_scores(
     request: Request,
     file: UploadFile = File(...),
     override_exam_type: Optional[str] = Form(None),
@@ -329,7 +340,8 @@ async def upload_scores(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(require_teacher),
 ):
-    df = normalize_columns(await read_file_to_dataframe(file))
+    enforce_rate_limit(request, "10/minute", "bulk_upload_scores")
+    df = normalize_columns(read_upload_to_dataframe(file))
     if "roll_number" not in df.columns:
         raise HTTPException(status_code=400, detail="Missing required column: roll_number")
 
@@ -525,13 +537,14 @@ async def upload_scores(
 
 
 @router.post("/upload-students", summary="Import validated student rows from Excel/CSV")
-async def upload_students(
+def upload_students(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(require_teacher),
 ):
-    df = normalize_columns(await read_file_to_dataframe(file))
+    enforce_rate_limit(request, "10/minute", "bulk_upload_students")
+    df = normalize_columns(read_upload_to_dataframe(file))
     required = {"name", "roll_number", "class_name", "section"}
     if not required.issubset(set(df.columns)):
         raise HTTPException(
