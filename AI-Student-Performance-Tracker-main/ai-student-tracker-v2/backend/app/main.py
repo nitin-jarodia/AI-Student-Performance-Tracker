@@ -14,6 +14,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import inspect
 
 from app.config import settings
+from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
 from app.core.security import hash_password
 from app.database import SessionLocal, engine
@@ -37,6 +38,8 @@ from app.routes import (
     teacher_assignments,
 )
 from app.services.subject_seed import ensure_fixed_subjects
+
+configure_logging("DEBUG" if settings.DEBUG else "INFO")
 
 log = logging.getLogger(__name__)
 
@@ -167,9 +170,31 @@ app.add_middleware(SlowAPIMiddleware)
 
 @app.exception_handler(RateLimitExceeded)
 async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    log.warning(
+        "rate_limit_exceeded method=%s path=%s client=%s",
+        request.method,
+        request.url.path,
+        request.client.host if request.client else "unknown",
+    )
     return JSONResponse(
         status_code=429,
         content={"detail": "Too many requests. Please wait a moment and try again."},
+    )
+
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = getattr(request.state, "request_id", "unknown")
+    log.exception(
+        "unhandled_exception method=%s path=%s request_id=%s err=%s",
+        request.method,
+        request.url.path,
+        request_id,
+        exc,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
     )
 
 

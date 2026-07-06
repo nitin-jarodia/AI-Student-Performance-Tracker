@@ -1,5 +1,6 @@
 # routes/auth.py - JWT authentication endpoints
 
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
@@ -25,6 +26,8 @@ from app.services.audit import client_ip_from_request, log_action
 from app.services.rbac import ROLE_ADMIN, ROLE_STUDENT, ROLE_TEACHER
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+log = logging.getLogger(__name__)
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
@@ -172,12 +175,14 @@ def register(
 def _authenticate(db: Session, email: str, password: str) -> User:
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password):
+        log.warning("auth_login_failed email=%s reason=invalid_credentials", email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not user.is_active:
+        log.warning("auth_login_failed email=%s reason=account_deactivated user_id=%s", email, user.id)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated")
     return user
 
@@ -198,6 +203,7 @@ def login(
     user = _authenticate(db, payload.email, payload.password)
     tokens = _issue_tokens(db, user)
     set_auth_cookies(response, tokens["access_token"], tokens["refresh_token"])
+    log.info("auth_login_success email=%s user_id=%s role=%s", user.email, user.id, user.role)
     log_action(
         user.email,
         (user.role or ROLE_TEACHER).lower(),
