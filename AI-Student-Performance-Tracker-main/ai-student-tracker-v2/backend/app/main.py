@@ -88,7 +88,7 @@ def _ensure_default_admin() -> None:
 
     db = SessionLocal()
     try:
-        existing = db.query(models.User).filter(models.User.role == "admin").first()
+        existing = db.query(models.User).filter(models.User.email == DEFAULT_ADMIN_EMAIL).first()
         if existing:
             return
         admin_user = models.User(
