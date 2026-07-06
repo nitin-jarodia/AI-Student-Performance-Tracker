@@ -50,7 +50,7 @@ jobs:
           SECRET_KEY: ci-test-secret-key-at-least-32-characters-long
           SEED_DEFAULT_ADMIN: "true"
           BOOTSTRAP_DEMO_LOGIN: "false"
-        run: pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=35
+        run: pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=50
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
