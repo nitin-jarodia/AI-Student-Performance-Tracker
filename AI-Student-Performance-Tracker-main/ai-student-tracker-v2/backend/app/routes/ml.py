@@ -25,7 +25,7 @@ from app.services.learning_style_service import classify_all_students
 router = APIRouter(prefix="/ml", tags=["Machine Learning"])
 
 
-@router.post("/train")
+@router.post("/train", summary="Train RandomForest on synthetic data (admin)")
 def train_model(request: Request, user: CurrentUser = Depends(require_admin)):
     """
     Train the synthetic-data RandomForest model (admin-only).
@@ -52,7 +52,7 @@ def train_model(request: Request, user: CurrentUser = Depends(require_admin)):
         return {"message": f"Error: {str(e)}", "status": "error"}
 
 
-@router.get("/learning-style-stats")
+@router.get("/learning-style-stats", summary="Learning-style distribution for charts")
 def learning_style_stats(db: Session = Depends(get_db), _: CurrentUser = Depends(require_teacher)):
     """Counts per ``students.learning_style`` for dashboard charts."""
 
@@ -70,7 +70,7 @@ def learning_style_stats(db: Session = Depends(get_db), _: CurrentUser = Depends
     return cached_json("ml:learning-style-stats", settings.CACHE_TTL_ANALYTICS, _load)
 
 
-@router.post("/classify-learning-styles")
+@router.post("/classify-learning-styles", summary="Classify and persist learning styles for all students")
 def classify_learning_styles_route(
     db: Session = Depends(get_db),
     _: CurrentUser = Depends(require_teacher),
@@ -85,7 +85,7 @@ def classify_learning_styles_route(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/train-real")
+@router.post("/train-real", summary="Train RandomForest on DB rows with rule-derived labels (admin)")
 def train_real_data_route(request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(require_admin)):
     """
     Train RandomForest on live PostgreSQL rows (admin-only).
@@ -112,7 +112,7 @@ def train_real_data_route(request: Request, db: Session = Depends(get_db), user:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/class-analytics")
+@router.get("/class-analytics", summary="Class-wide risk analytics and factor distribution")
 def get_class_analytics(db: Session = Depends(get_db), _: CurrentUser = Depends(require_teacher)):
     """
     Class-wide analytics including ``risk_factor_distribution`` (primary concern counts).
@@ -168,7 +168,7 @@ def get_class_analytics(db: Session = Depends(get_db), _: CurrentUser = Depends(
     return cached_json("ml:class-analytics", settings.CACHE_TTL_ANALYTICS, _load)
 
 
-@router.get("/model-status")
+@router.get("/model-status", summary="Active model registry and feature importance")
 def get_model_status(_: CurrentUser = Depends(require_teacher)):
     """
     Registry-aware model status + paths for synthetic vs real checkpoints.
@@ -207,7 +207,7 @@ def get_model_status(_: CurrentUser = Depends(require_teacher)):
     }
 
 
-@router.get("/model-metrics")
+@router.get("/model-metrics", summary="Holdout evaluation metrics from model registry")
 def get_model_metrics(_: CurrentUser = Depends(require_teacher)):
     """
     Return holdout evaluation metrics from ``model_registry.json`` (if trained).
@@ -226,7 +226,7 @@ def get_model_metrics(_: CurrentUser = Depends(require_teacher)):
     }
 
 
-@router.get("/predict/{student_id}")
+@router.get("/predict/{student_id}", summary="ML risk prediction with explainability payload")
 def ml_predict_student(
     student_id: int,
     db: Session = Depends(get_db),
@@ -283,7 +283,7 @@ def ml_predict_student(
     }
 
 
-@router.get("/report/{student_id}")
+@router.get("/report/{student_id}", summary="Generate AI narrative report for a student")
 def ml_generate_report(
     student_id: int,
     db: Session = Depends(get_db),

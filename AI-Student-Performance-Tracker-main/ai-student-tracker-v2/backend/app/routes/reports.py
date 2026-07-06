@@ -168,7 +168,7 @@ def _assemble_report(db: Session, student_id: int, blocks: List[str], filters: D
     return {"student_id": student_id, "generated_at": datetime.utcnow().isoformat() + "Z", "blocks": assembled}
 
 
-@router.post("/custom")
+@router.post("/custom", summary="Generate a custom multi-block student report")
 def custom_report(
     body: CustomReportBody,
     db: Session = Depends(get_db),
@@ -177,7 +177,7 @@ def custom_report(
     return _assemble_report(db, body.student_id, body.blocks, body.filters or {})
 
 
-@router.get("/templates")
+@router.get("/templates", summary="List saved report templates")
 def list_templates(
     db: Session = Depends(get_db),
     _: CurrentUser = Depends(require_teacher),
@@ -196,7 +196,7 @@ def list_templates(
     return {"templates": out}
 
 
-@router.post("/templates")
+@router.post("/templates", summary="Save a reusable report template")
 def save_template(
     body: TemplateBody,
     db: Session = Depends(get_db),
@@ -214,7 +214,7 @@ def save_template(
     return {"id": tpl.id, "message": "Template saved"}
 
 
-@router.get("/templates/{template_id}")
+@router.get("/templates/{template_id}", summary="Fetch a saved report template by ID")
 def get_template(
     template_id: int,
     db: Session = Depends(get_db),

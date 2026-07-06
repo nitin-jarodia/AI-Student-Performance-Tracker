@@ -80,7 +80,7 @@ def _qr_png_b64(data: str) -> str:
         raise HTTPException(status_code=500, detail=f"QR generation failed: {exc}") from exc
 
 
-@router.post("/generate")
+@router.post("/generate", summary="Create a signed QR attendance session")
 def generate_qr(
     body: GenerateBody,
     db: Session = Depends(get_db),
@@ -134,7 +134,7 @@ def generate_qr(
     }
 
 
-@router.post("/scan")
+@router.post("/scan", summary="Record attendance from a signed QR token")
 def scan_qr(
     body: ScanBody,
     db: Session = Depends(get_db),
@@ -183,7 +183,7 @@ def scan_qr(
     return {"status": "success", "message": "Attendance marked present.", "date": str(session.date)}
 
 
-@router.get("/session/status/{session_id}")
+@router.get("/session/status/{session_id}", summary="Poll QR attendance session status")
 def session_status(
     session_id: int,
     db: Session = Depends(get_db),
@@ -222,7 +222,7 @@ def session_status(
     }
 
 
-@router.get("/history")
+@router.get("/history", summary="List past QR attendance sessions")
 def qr_history(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(require_teacher),

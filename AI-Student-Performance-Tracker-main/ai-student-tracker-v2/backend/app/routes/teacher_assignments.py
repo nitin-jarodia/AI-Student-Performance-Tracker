@@ -44,7 +44,7 @@ def _serialize(row: TeacherSubjectAssignment, teacher: Optional[User], subject: 
     }
 
 
-@router.get("/")
+@router.get("/", summary="List teacher-subject assignments (admin)")
 def list_assignments(
     teacher_id: Optional[int] = None,
     subject_id: Optional[int] = None,
@@ -68,7 +68,7 @@ def list_assignments(
     }
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Assign a teacher to a subject/class")
 def create_assignment(
     payload: AssignmentCreate,
     request: Request,
@@ -122,7 +122,7 @@ def create_assignment(
     return _serialize(row, teacher, subject)
 
 
-@router.delete("/{assignment_id}")
+@router.delete("/{assignment_id}", summary="Remove a teacher-subject assignment (admin)")
 def delete_assignment(
     assignment_id: int,
     request: Request,

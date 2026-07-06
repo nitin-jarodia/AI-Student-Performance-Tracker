@@ -86,7 +86,7 @@ class GenerateLinkBody(BaseModel):
     role: Literal["parent", "student"] = "parent"
 
 
-@router.post("/generate-link")
+@router.post("/generate-link", summary="Mint a time-limited parent/student portal URL")
 def generate_portal_link(
     body: GenerateLinkBody,
     request: Request,
@@ -136,7 +136,7 @@ def generate_portal_link(
     }
 
 
-@router.get("/me")
+@router.get("/me", summary="Public portal snapshot (token query param, no JWT)")
 def portal_me(
     token: str = Query(..., min_length=8),
     db: Session = Depends(get_db),
@@ -187,7 +187,7 @@ def portal_me(
     }
 
 
-@router.get("/report/pdf")
+@router.get("/report/pdf", summary="Download portal PDF report (token auth)")
 def portal_report_pdf(
     token: str = Query(..., min_length=8),
     db: Session = Depends(get_db),

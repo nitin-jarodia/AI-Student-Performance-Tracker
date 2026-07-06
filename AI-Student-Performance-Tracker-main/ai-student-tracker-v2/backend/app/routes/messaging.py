@@ -111,7 +111,7 @@ def _conversation_counterpart_user_id(conv: Conversation, current: CurrentUser, 
 # ---------- routes -----------------------------------------------------------
 
 
-@router.get("/conversations")
+@router.get("/conversations", summary="List messaging threads for the current user")
 def list_conversations(
     db: Session = Depends(get_db),
     current: CurrentUser = Depends(require_authenticated),
@@ -157,7 +157,7 @@ def list_conversations(
     return {"conversations": result, "total": len(result)}
 
 
-@router.post("/conversations", status_code=status.HTTP_201_CREATED)
+@router.post("/conversations", status_code=status.HTTP_201_CREATED, summary="Start a teacher-student conversation")
 def create_conversation(
     payload: ConversationCreate,
     db: Session = Depends(get_db),
@@ -246,7 +246,7 @@ def create_conversation(
     }
 
 
-@router.get("/conversations/{conversation_id}")
+@router.get("/conversations/{conversation_id}", summary="Fetch a conversation thread with messages")
 def get_conversation(
     conversation_id: int,
     db: Session = Depends(get_db),
@@ -281,7 +281,11 @@ def get_conversation(
     }
 
 
-@router.post("/conversations/{conversation_id}/messages", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/conversations/{conversation_id}/messages",
+    status_code=status.HTTP_201_CREATED,
+    summary="Post a message to an existing conversation",
+)
 def post_message(
     conversation_id: int,
     payload: MessagePost,
@@ -338,7 +342,7 @@ def post_message(
     return _serialize_message(msg)
 
 
-@router.post("/conversations/{conversation_id}/close")
+@router.post("/conversations/{conversation_id}/close", summary="Close an open conversation (teacher/admin)")
 def close_conversation(
     conversation_id: int,
     db: Session = Depends(get_db),
@@ -357,7 +361,7 @@ def close_conversation(
     return {"ok": True, "id": conv.id, "status": conv.status}
 
 
-@router.get("/contacts")
+@router.get("/contacts", summary="List users the caller can message")
 def list_contacts(
     db: Session = Depends(get_db),
     current: CurrentUser = Depends(require_authenticated),

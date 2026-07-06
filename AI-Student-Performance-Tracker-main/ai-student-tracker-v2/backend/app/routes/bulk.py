@@ -178,7 +178,7 @@ def students_template_bytes() -> bytes:
     return bio.getvalue()
 
 
-@router.get("/template/scores")
+@router.get("/template/scores", summary="Download scores Excel template")
 def download_scores_template(_: CurrentUser = Depends(require_teacher)):
     data = scores_template_bytes()
     return Response(
@@ -188,7 +188,7 @@ def download_scores_template(_: CurrentUser = Depends(require_teacher)):
     )
 
 
-@router.get("/template/students")
+@router.get("/template/students", summary="Download students Excel template")
 def download_students_template(_: CurrentUser = Depends(require_teacher)):
     data = students_template_bytes()
     return Response(
@@ -198,7 +198,7 @@ def download_students_template(_: CurrentUser = Depends(require_teacher)):
     )
 
 
-@router.post("/preview-scores")
+@router.post("/preview-scores", summary="Validate and preview bulk score upload")
 async def preview_scores(
     file: UploadFile = File(...),
     override_exam_type: Optional[str] = Form(None),
@@ -235,7 +235,7 @@ async def preview_scores(
     }
 
 
-@router.post("/preview-students")
+@router.post("/preview-students", summary="Validate and preview bulk student roster upload")
 async def preview_students(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -320,7 +320,7 @@ async def preview_students(
     }
 
 
-@router.post("/upload-scores")
+@router.post("/upload-scores", summary="Import validated score rows from Excel/CSV")
 async def upload_scores(
     request: Request,
     file: UploadFile = File(...),
@@ -524,7 +524,7 @@ async def upload_scores(
     }
 
 
-@router.post("/upload-students")
+@router.post("/upload-students", summary="Import validated student rows from Excel/CSV")
 async def upload_students(
     request: Request,
     file: UploadFile = File(...),

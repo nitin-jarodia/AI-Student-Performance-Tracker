@@ -95,7 +95,7 @@ def _compute_attendance_pct(db: Session, student_id: int) -> tuple[float, int]:
 
 # ── Static paths must appear before /{student_id} ───────────────────────────
 
-@router.get("/summary/all")
+@router.get("/summary/all", summary="Class-wide performance and risk summary")
 def get_all_summary(db: Session = Depends(get_db), _: CurrentUser = Depends(require_teacher)):
     students = db.query(Student).all()
     summary  = []
@@ -158,7 +158,7 @@ def get_all_summary(db: Session = Depends(get_db), _: CurrentUser = Depends(requ
     }
 
 
-@router.get("/attendance/day-summary")
+@router.get("/attendance/day-summary", summary="Attendance stats for a calendar day")
 def attendance_day_summary(
     target_date: Optional[date] = Query(None, alias="date"),
     db: Session = Depends(get_db),
@@ -183,7 +183,7 @@ def attendance_day_summary(
     }
 
 
-@router.get("/attendance/student/{student_id}")
+@router.get("/attendance/student/{student_id}", summary="Attendance history for one student")
 def list_student_attendance(
     student_id: int,
     db: Session = Depends(get_db),
@@ -210,7 +210,7 @@ def list_student_attendance(
     }
 
 
-@router.post("/attendance/bulk")
+@router.post("/attendance/bulk", summary="Bulk mark attendance for multiple students")
 def add_attendance_bulk(
     body: AttendanceBulkCreate,
     request: Request,
@@ -260,7 +260,7 @@ def add_attendance_bulk(
 
 
 # ── GET all performance for a student ──
-@router.get("/{student_id}")
+@router.get("/{student_id}", summary="Performance records and summary for a student")
 def get_student_performance(
     student_id: int,
     db: Session = Depends(get_db),
@@ -301,7 +301,7 @@ def get_student_performance(
     }
 
 # ── POST add performance record ──
-@router.post("/")
+@router.post("/", summary="Add a score record for a student")
 def add_performance(
     perf: PerformanceCreate,
     request: Request,
@@ -355,7 +355,7 @@ def add_performance(
     }
 
 # ── POST add attendance ──
-@router.post("/attendance", status_code=201)
+@router.post("/attendance", status_code=201, summary="Record attendance for a student")
 def add_attendance(
     att: AttendanceCreate,
     request: Request,
@@ -421,7 +421,7 @@ def add_attendance(
     }
 
 # ── GET AI Risk Prediction for a student ──
-@router.get("/{student_id}/predict")
+@router.get("/{student_id}/predict", summary="Rule/ML risk prediction for a student")
 def predict_performance(
     student_id: int,
     request: Request,
@@ -491,7 +491,7 @@ def predict_performance(
     }
 
 # ── GET AI Report for student ──
-@router.get("/{student_id}/report")
+@router.get("/{student_id}/report", summary="Download PDF performance report for a student")
 def get_ai_report(
     student_id: int,
     db: Session = Depends(get_db),
@@ -520,7 +520,7 @@ def get_ai_report(
 # ── Student self-serve helpers ──────────────────────────────────────────────
 
 
-@router.get("/me/summary")
+@router.get("/me/summary", summary="Logged-in student's own performance summary")
 def my_performance_summary(
     db: Session = Depends(get_db),
     current: CurrentUser = Depends(require_authenticated),
