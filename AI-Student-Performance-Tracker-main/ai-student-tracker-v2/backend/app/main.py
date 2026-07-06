@@ -145,9 +145,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AI Student Performance Tracker",
-    description="Full-stack project with JWT auth, ML risk prediction, AI reports and messaging.",
+    description=(
+        "Production-grade school analytics API: JWT auth, student CRUD, performance tracking, "
+        "RandomForest risk prediction with explainability, Gemini AI reports, and bulk operations. "
+        "See /health and /ready for probes; OpenAPI docs at /docs."
+    ),
     version="4.0.0",
     lifespan=lifespan,
+    openapi_tags=[
+        {"name": "Authentication", "description": "Login, refresh, RBAC user management"},
+        {"name": "Performance", "description": "Scores, attendance, summaries, predictions"},
+        {"name": "ML", "description": "Model training, class analytics, risk prediction"},
+        {"name": "AI Chatbot", "description": "Natural-language queries over roster data"},
+    ],
 )
 
 # Rate limiter (brute-force protection, applied per-route via decorators)
@@ -299,5 +309,24 @@ def ready():
             status_code=503,
             content={"status": "not_ready", "database": "error", "detail": str(exc)},
         )
+    finally:
+        db.close()
+
+
+@app.get("/metrics")
+def metrics():
+    """Lightweight operational counters for monitoring dashboards."""
+    from sqlalchemy import func
+
+    from app.models.models import Student, User
+
+    db = SessionLocal()
+    try:
+        return {
+            "version": "4.0.0",
+            "students": db.query(func.count(Student.id)).scalar() or 0,
+            "users": db.query(func.count(User.id)).scalar() or 0,
+            "active_users": db.query(func.count(User.id)).filter(User.is_active.is_(True)).scalar() or 0,
+        }
     finally:
         db.close()

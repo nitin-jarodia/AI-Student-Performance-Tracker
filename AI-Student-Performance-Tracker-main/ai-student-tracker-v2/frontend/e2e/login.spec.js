@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { loginAsDemo } from './helpers.js'
 
 test('login page shows demo credentials and can sign in', async ({ page }) => {
   await page.goto('/login')

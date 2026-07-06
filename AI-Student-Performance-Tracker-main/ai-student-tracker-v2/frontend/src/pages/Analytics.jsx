@@ -1,40 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { mlAPI, performanceAPI } from '../services/api'
 import { GradeDistributionBar, RiskPieChart } from '../components/Charts'
+import { useAnalyticsData } from '../hooks/useAnalyticsData'
 import { useToast } from '../context/ToastContext'
 
 export default function Analytics() {
   const { showToast } = useToast()
   const navigate = useNavigate()
-
-  const [summary, setSummary] = useState(null)
-  const [analytics, setAnalytics] = useState(null)
-  const [model, setModel] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  const load = async () => {
-    try {
-      setLoading(true)
-      const [sum, cls, ms] = await Promise.all([
-        performanceAPI.getAllSummary(),
-        mlAPI.classAnalytics(),
-        mlAPI.modelStatus(),
-      ])
-      setSummary(sum.data)
-      setAnalytics(cls.data)
-      setModel(ms.data)
-    } catch {
-      showToast('Could not load analytics', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data, isLoading, isError, refetch } = useAnalyticsData()
 
   useEffect(() => {
-    load()
-  }, [])
+    if (isError) {
+      showToast('Could not load analytics', 'error')
+    }
+  }, [isError, showToast])
+
+  const summary = data?.summary
+  const analytics = data?.analytics
+  const model = data?.model
 
   const gradeDist = useMemo(() => {
     const rows = summary?.students || []
@@ -58,7 +42,7 @@ export default function Analytics() {
     }))
   }, [analytics])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="grid gap-4">
         <div className="grid gap-4 md:grid-cols-3">
@@ -81,7 +65,7 @@ export default function Analytics() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Analytics</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Class modeling, distributions, and drill-down.</p>
         </div>
-        <button type="button" className="btn-secondary" onClick={load}>
+        <button type="button" className="btn-secondary" onClick={() => refetch()}>
           Refresh
         </button>
       </div>

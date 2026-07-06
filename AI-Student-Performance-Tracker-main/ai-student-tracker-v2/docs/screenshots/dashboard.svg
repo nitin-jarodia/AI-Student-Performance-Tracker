@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect x="0" y="0" width="220" height="720" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="24" y="48" fill="#6366f1" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">AI Student Tracker</text>
+  <rect x="24" y="80" width="172" height="36" rx="8" fill="#6366f1"/>
+  <text x="40" y="103" fill="#fff" font-family="Segoe UI, sans-serif" font-size="14">Dashboard</text>
+  <text x="40" y="150" fill="#64748b" font-family="Segoe UI, sans-serif" font-size="14">Students</text>
+  <text x="40" y="180" fill="#64748b" font-family="Segoe UI, sans-serif" font-size="14">Analytics</text>
+  <text x="280" y="70" fill="#0f172a" font-family="Segoe UI, sans-serif" font-size="28" font-weight="700">Good to see you</text>
+  <text x="280" y="100" fill="#64748b" font-family="Segoe UI, sans-serif" font-size="14">Live class health, risks, and teacher workflows</text>
+  <rect x="280" y="130" width="220" height="110" rx="16" fill="#fff" stroke="#e2e8f0"/>
+  <text x="300" y="165" fill="#64748b" font-family="Segoe UI, sans-serif" font-size="12">TOTAL STUDENTS</text>
+  <text x="300" y="205" fill="#6366f1" font-family="Segoe UI, sans-serif" font-size="36" font-weight="700">128</text>
+  <rect x="520" y="130" width="220" height="110" rx="16" fill="#fff" stroke="#e2e8f0"/>
+  <text x="540" y="165" fill="#64748b" font-family="Segoe UI, sans-serif" font-size="12">HIGH RISK</text>
+  <text x="540" y="205" fill="#ef4444" font-family="Segoe UI, sans-serif" font-size="36" font-weight="700">12</text>
+  <rect x="760" y="130" width="220" height="110" rx="16" fill="#fff" stroke="#e2e8f0"/>
+  <text x="780" y="165" fill="#64748b" font-family="Segoe UI, sans-serif" font-size="12">CLASS AVG</text>
+  <text x="780" y="205" fill="#10b981" font-family="Segoe UI, sans-serif" font-size="36" font-weight="700">74%</text>
+  <rect x="280" y="270" width="460" height="280" rx="16" fill="#fff" stroke="#e2e8f0"/>
+  <text x="300" y="305" fill="#0f172a" font-family="Segoe UI, sans-serif" font-size="16" font-weight="700">Risk distribution</text>
+  <circle cx="480" cy="420" r="80" fill="#6366f1" opacity="0.85"/>
+  <circle cx="480" cy="420" r="50" fill="#fff"/>
+  <rect x="780" y="270" width="420" height="280" rx="16" fill="#fff" stroke="#e2e8f0"/>
+  <text x="800" y="305" fill="#0f172a" font-family="Segoe UI, sans-serif" font-size="16" font-weight="700">Score trends</text>
+  <polyline points="800,500 860,460 920,470 980,420 1040,430 1100,380 1160,390" fill="none" stroke="#6366f1" stroke-width="4"/>
+</svg>

@@ -1,33 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Navigate } from 'react-router-dom'
 import { mlAPI, formatAxiosError } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { useModelStatus } from '../hooks/useModelStatus'
 
 export default function Settings() {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const [status, setStatus] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const { data: status, isLoading, refetch } = useModelStatus()
   const [trainBusy, setTrainBusy] = useState(false)
   const [trainRealBusy, setTrainRealBusy] = useState(false)
   const [lastTrainMsg, setLastTrainMsg] = useState(null)
-
-  const load = async () => {
-    try {
-      setLoading(true)
-      const res = await mlAPI.modelStatus()
-      setStatus(res.data)
-    } catch (e) {
-      showToast(formatAxiosError(e), 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const runSynthetic = async () => {
     try {
@@ -35,7 +21,7 @@ export default function Settings() {
       const res = await mlAPI.train()
       setLastTrainMsg(res.data)
       showToast(res.data?.message || 'Training finished', res.data?.status === 'success' ? 'success' : 'warning')
-      await load()
+      await queryClient.invalidateQueries({ queryKey: ['model-status'] })
     } catch (e) {
       showToast(formatAxiosError(e), 'error')
     } finally {
@@ -49,7 +35,7 @@ export default function Settings() {
       const res = await mlAPI.trainReal()
       setLastTrainMsg(res.data)
       showToast('Real-data training completed', 'success')
-      await load()
+      await queryClient.invalidateQueries({ queryKey: ['model-status'] })
     } catch (e) {
       showToast(formatAxiosError(e), 'error')
     } finally {
@@ -70,7 +56,7 @@ export default function Settings() {
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Training jobs and active checkpoint selection (admin only).</p>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="skeleton h-40 rounded-2xl" />
       ) : (
         <div className="card space-y-4 p-6">
@@ -131,7 +117,7 @@ export default function Settings() {
             <button type="button" className="btn-primary" disabled={trainRealBusy} onClick={runReal}>
               {trainRealBusy ? 'Training…' : 'Train on real data'}
             </button>
-            <button type="button" className="btn-ghost" onClick={load}>
+            <button type="button" className="btn-ghost" onClick={() => refetch()}>
               Refresh status
             </button>
           </div>

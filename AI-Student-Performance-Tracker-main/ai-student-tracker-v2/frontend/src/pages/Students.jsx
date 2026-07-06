@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -14,7 +15,8 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
-import { performanceAPI, studentAPI } from '../services/api'
+import { studentAPI } from '../services/api'
+import { useStudentsData } from '../hooks/useStudentsData'
 import StudentFormModal from '../components/StudentFormModal'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
@@ -68,13 +70,15 @@ export default function Students() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [students, setStudents] = useState([])
-  const [riskMap, setRiskMap] = useState({})
+  const [styleFilter, setStyleFilter] = useState('')
+  const queryClient = useQueryClient()
+  const { data, isLoading, isError } = useStudentsData(styleFilter)
+  const students = data?.students ?? []
+  const riskMap = data?.riskMap ?? {}
+
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounced(search, 220)
-  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [styleFilter, setStyleFilter] = useState('')
   const [riskFilter, setRiskFilter] = useState(() => {
     const params = new URLSearchParams(location.search)
     return params.get('risk') || ''
@@ -105,31 +109,9 @@ export default function Students() {
     if (location.state?.openAdd) setShowModal(true)
   }, [location.state])
 
-  const load = async () => {
-    try {
-      setLoading(true)
-      const params = {}
-      if (styleFilter) params.learning_style = styleFilter
-      const [stRes, sumRes] = await Promise.all([
-        studentAPI.getAll(params),
-        performanceAPI.getAllSummary(),
-      ])
-      setStudents(stRes.data.students || [])
-      const m = {}
-      ;(sumRes.data.students || []).forEach((s) => {
-        m[s.id] = s.risk_level
-      })
-      setRiskMap(m)
-    } catch {
-      showToast('Failed to load students', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    load()
-  }, [styleFilter])
+    if (isError) showToast('Failed to load students', 'error')
+  }, [isError, showToast])
 
   const learningStyles = useMemo(() => {
     const set = new Set()
@@ -191,7 +173,7 @@ export default function Students() {
       await studentAPI.delete(toDelete.id)
       showToast('Student removed', 'success')
       setToDelete(null)
-      load()
+      queryClient.invalidateQueries({ queryKey: ['students'] })
     } catch {
       showToast('Delete failed', 'error')
     } finally {
@@ -561,7 +543,7 @@ export default function Students() {
       {renderHeader()}
       {renderFilters()}
 
-      {loading ? (
+      {isLoading ? (
         view === 'table' ? (
           <SkeletonTable rows={6} cols={6} />
         ) : (
@@ -600,7 +582,7 @@ export default function Students() {
         onClose={() => setShowModal(false)}
         onSaved={() => {
           showToast('Student created', 'success')
-          load()
+          queryClient.invalidateQueries({ queryKey: ['students'] })
         }}
       />
 
