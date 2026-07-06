@@ -12,7 +12,7 @@ Use this as a 2-minute pitch + deep-dive cheat sheet for resume screens and tech
 2. **Dashboard** — risk KPIs, class health, quick actions
 3. **Students** — CRUD, detail view, trend charts
 4. **Analytics** — ML class analytics + risk factor breakdown
-5. **Settings (admin)** — train synthetic/real RandomForest model
+5. **Settings (admin)** — train RandomForest model (synthetic or DB features with rule-derived labels)
 6. **Assistant** — “list all students” or “show high risk students”
 
 ## Architecture talking points
@@ -20,7 +20,7 @@ Use this as a 2-minute pitch + deep-dive cheat sheet for resume screens and tech
 | Topic | What to say |
 |-------|-------------|
 | **Auth** | JWT in HttpOnly cookies + refresh rotation; Bearer for tests; RBAC on every route |
-| **ML** | RandomForest with rule-based fallback so teachers always get a risk label |
+| **ML** | RandomForest trained on synthetic data + rule-derived labels (no ground-truth outcomes in DB); rule-based fallback at inference |
 | **Explainability** | Four features: avg score, attendance, trend, failed subjects — see [ML.md](ML.md) |
 | **AI** | Gemini for report narratives + chatbot planner; regex heuristic fallback without API key |
 | **Deploy** | Alembic on startup, `/ready` probe, demo user bootstrap, auto-deploy from GitHub |
@@ -46,15 +46,6 @@ A: Locked public admin registration, removed hardcoded secrets, forced password 
 - **Frontend:** React 18, Vite, Tailwind, TanStack Query, Recharts
 - **Backend:** FastAPI, SQLAlchemy, Alembic, slowapi, scikit-learn
 - **Infra:** Docker Compose, GitHub Actions, Render, Vercel, optional Redis/Sentry
-
-## Repo highlights for resume bullet
-
-```
-• Built full-stack student analytics platform (React/FastAPI/PostgreSQL) with ML risk 
-  prediction, Gemini AI reports, and role-based access for 16+ feature modules
-• Deployed production demo on Vercel + Render with HttpOnly JWT cookies, Alembic 
-  migrations, CI (pytest + Playwright + ESLint), and automated demo login bootstrap
-```
 
 ## Links to cite
 

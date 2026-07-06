@@ -3,7 +3,6 @@
 [![CI](https://github.com/nitin-jarodia/AI-Student-Performance-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/nitin-jarodia/AI-Student-Performance-Tracker/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/demo-Vercel-000?style=flat&logo=vercel)](https://ai-student-performance-tracker.vercel.app)
 [![API](https://img.shields.io/badge/API-Render-46E3B7?style=flat&logo=render)](https://ai-student-tracker-api.onrender.com/health)
-[![Resume Ready](https://img.shields.io/badge/resume-9.5%2F10-brightgreen?style=flat)](/AI-Student-Performance-Tracker-main/ai-student-tracker-v2/docs/RESUME.md)
 
 Full-stack app for tracking, analyzing, and predicting K-12 student performance.  
 **Live demo:** [ai-student-performance-tracker.vercel.app](https://ai-student-performance-tracker.vercel.app) — sign in with **`demo@school.com` / `demo`**
@@ -21,9 +20,8 @@ Full-stack app for tracking, analyzing, and predicting K-12 student performance.
 |-----|---------|
 | [docs/DEMO.md](docs/DEMO.md) | Live URLs, demo login, recruiter walkthrough, UptimeRobot |
 | [docs/ML.md](docs/ML.md) | ML pipeline, features, training, interview talking points |
-| [docs/INTERVIEW.md](docs/INTERVIEW.md) | 2-minute pitch, Q&A cheat sheet, resume bullets |
+| [docs/INTERVIEW.md](docs/INTERVIEW.md) | Elevator pitch, demo script, likely interview Q&A |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, auth flow, deployment |
-| [docs/RESUME.md](docs/RESUME.md) | **9.5/10 completion checklist** + copy-paste bullets |
 
 ## Screenshots
 
@@ -33,7 +31,7 @@ Full-stack app for tracking, analyzing, and predicting K-12 student performance.
 
 ![Students](docs/screenshots/students.svg)
 
-Replace SVG previews with PNG captures from the [live demo](https://ai-student-performance-tracker.vercel.app) — see [docs/screenshots/README.md](docs/screenshots/README.md).
+See [docs/screenshots/README.md](docs/screenshots/README.md) for capture instructions.
 
 ---
 
