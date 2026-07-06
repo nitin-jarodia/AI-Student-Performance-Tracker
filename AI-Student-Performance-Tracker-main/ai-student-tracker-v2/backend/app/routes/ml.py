@@ -177,10 +177,22 @@ def get_model_status(_: CurrentUser = Depends(require_teacher)):
     """
     import os
 
+    from app.ml.predict import FEATURE_LABELS, load_trained_model
+
     reg = read_model_registry()
     real_exists = os.path.exists("ml_models/performance_model_real.pkl")
     synth_exists = os.path.exists("ml_models/performance_model.pkl")
     active = reg.get("active_model", "synthetic")
+
+    feature_importance = None
+    model = load_trained_model()
+    if model is not None and hasattr(model, "feature_importances_"):
+        imp = model.feature_importances_
+        feature_importance = [
+            {"feature": FEATURE_LABELS[i], "importance": round(float(imp[i]), 4)}
+            for i in range(min(len(FEATURE_LABELS), len(imp)))
+        ]
+        feature_importance.sort(key=lambda row: row["importance"], reverse=True)
 
     return {
         "model_available": real_exists or synth_exists,
@@ -190,6 +202,8 @@ def get_model_status(_: CurrentUser = Depends(require_teacher)):
         "real_model_exists": real_exists,
         "synthetic_model_exists": synth_exists,
         "active_model": active,
+        "feature_labels": FEATURE_LABELS,
+        "feature_importance": feature_importance,
     }
 
 

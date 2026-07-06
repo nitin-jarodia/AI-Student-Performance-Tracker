@@ -309,6 +309,26 @@ export default function Login() {
               <p className="text-center text-xs text-slate-400">
                 Secured with JWT · No third-party auth providers
               </p>
+
+              {(import.meta.env.VITE_SHOW_DEMO_CREDENTIALS === 'true' ||
+                import.meta.env.PROD) && (
+                <div className="rounded-xl border border-brand-200 bg-brand-50/80 px-4 py-3 text-xs text-brand-900">
+                  <p className="font-semibold">Live demo credentials</p>
+                  <p className="mt-1 font-mono">
+                    demo@school.com / demo
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-2 text-brand-700 underline hover:text-brand-900"
+                    onClick={() => {
+                      setEmail('demo@school.com')
+                      setPassword('demo')
+                    }}
+                  >
+                    Fill demo credentials
+                  </button>
+                </div>
+              )}
             </motion.form>
           </motion.div>
         </div>

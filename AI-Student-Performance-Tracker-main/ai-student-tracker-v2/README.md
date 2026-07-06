@@ -1,9 +1,25 @@
 # AI Student Performance Tracker
 
-Full-stack app for tracking, analyzing, and predicting K-12 student performance.
-Backend: FastAPI + PostgreSQL + SQLAlchemy + scikit-learn.
-Frontend: React (Vite) + TailwindCSS + Recharts.
-Auth: JWT in HttpOnly cookies (access + refresh rotation, bcrypt hashing, slowapi rate limiting).
+[![CI](https://github.com/nitin-jarodia/AI-Student-Performance-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/nitin-jarodia/AI-Student-Performance-Tracker/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/demo-Vercel-000?style=flat&logo=vercel)](https://ai-student-performance-tracker.vercel.app)
+[![API](https://img.shields.io/badge/API-Render-46E3B7?style=flat&logo=render)](https://ai-student-tracker-api.onrender.com/health)
+
+Full-stack app for tracking, analyzing, and predicting K-12 student performance.  
+**Live demo:** [ai-student-performance-tracker.vercel.app](https://ai-student-performance-tracker.vercel.app) — sign in with **`demo@school.com` / `demo`**
+
+| Layer | Stack |
+|-------|-------|
+| Frontend | React 18, Vite, Tailwind, Recharts, TanStack Query |
+| Backend | FastAPI, SQLAlchemy, Alembic, scikit-learn, Google Gemini |
+| Auth | HttpOnly cookies + Bearer fallback for tests |
+| Deploy | Vercel (UI) + Render (API) — see [docs/DEMO.md](docs/DEMO.md) |
+
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [docs/DEMO.md](docs/DEMO.md) | Live URLs, demo login, recruiter walkthrough, UptimeRobot |
+| [docs/ML.md](docs/ML.md) | ML pipeline, features, training, interview talking points |
 
 ---
 

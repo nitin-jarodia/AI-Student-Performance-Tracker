@@ -101,6 +101,11 @@ export default function Analytics() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Model</p>
           <p className="mt-2 text-sm font-semibold text-slate-900">{model?.model_type || 'Rule-based'}</p>
           <p className="mt-1 text-xs text-slate-500">{model?.status || ''}</p>
+          {model?.feature_labels?.length ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+              Features: {model.feature_labels.join(' · ')}
+            </p>
+          ) : null}
         </div>
       </div>
 

@@ -16,6 +16,8 @@ def test_model_status_for_teacher(client: TestClient, admin_headers: dict[str, s
     assert "model_type" in payload
     assert "status" in payload
     assert "active_model" in payload
+    assert "feature_labels" in payload
+    assert len(payload["feature_labels"]) == 4
 
 
 def test_rule_based_fallback_when_no_model() -> None:

@@ -16,7 +16,7 @@ services:
     rootDir: AI-Student-Performance-Tracker-main/ai-student-tracker-v2/backend
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: bash start.sh
-    healthCheckPath: /health
+    healthCheckPath: /ready
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -28,6 +28,8 @@ services:
         value: "3.12.9"
       - key: SEED_DEFAULT_ADMIN
         value: "false"
+      - key: BOOTSTRAP_DEMO_LOGIN
+        value: "true"
       - key: SKIP_AUTO_MIGRATE
         value: "1"
       - key: COOKIE_SECURE

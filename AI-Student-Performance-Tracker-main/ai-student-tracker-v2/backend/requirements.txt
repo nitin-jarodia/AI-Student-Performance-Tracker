@@ -56,3 +56,6 @@ shap==0.52.0
 
 # Optional Redis cache for analytics endpoints
 redis==5.2.1
+
+# Optional error tracking (only initialized when SENTRY_DSN is set)
+sentry-sdk[fastapi]==2.22.0

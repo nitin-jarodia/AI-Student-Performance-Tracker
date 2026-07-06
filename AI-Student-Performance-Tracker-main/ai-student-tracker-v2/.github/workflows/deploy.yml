@@ -1,0 +1,23 @@
+name: Deploy API
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "AI-Student-Performance-Tracker-main/ai-student-tracker-v2/backend/**"
+      - "render.yaml"
+      - ".github/workflows/deploy.yml"
+
+jobs:
+  render-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK not set — skipping deploy trigger"
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK"

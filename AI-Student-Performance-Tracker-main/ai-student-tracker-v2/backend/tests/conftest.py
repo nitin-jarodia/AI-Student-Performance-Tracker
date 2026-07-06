@@ -18,6 +18,7 @@ os.environ.setdefault(
 )
 os.environ.setdefault("SECRET_KEY", "test-secret-key-at-least-32-characters-long")
 os.environ.setdefault("SEED_DEFAULT_ADMIN", "true")
+os.environ.setdefault("BOOTSTRAP_DEMO_LOGIN", "false")
 os.environ.setdefault("DEBUG", "false")
 
 from app.main import app  # noqa: E402

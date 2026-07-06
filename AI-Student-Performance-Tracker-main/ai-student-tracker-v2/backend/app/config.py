@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     REDIS_URL: str = ""
     CACHE_TTL_ANALYTICS: int = 300
 
+    # Production demo: reset demo@school.com password on startup so live demos always work
+    BOOTSTRAP_DEMO_LOGIN: bool = True
+
+    # Optional error tracking (leave empty to disable)
+    SENTRY_DSN: str = ""
+
     # Email (SMTP) - optional; alerts degrade to log-only when missing
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587

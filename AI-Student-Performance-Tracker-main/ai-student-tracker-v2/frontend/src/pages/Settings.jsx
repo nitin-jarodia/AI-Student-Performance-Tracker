@@ -98,6 +98,32 @@ export default function Settings() {
             <p className="mt-1 text-xs text-slate-500">Last real train: {reg.real_model_trained_at || 'never'}</p>
           </div>
 
+          {status?.feature_importance?.length ? (
+            <div className="rounded-xl border border-slate-100 bg-white p-4">
+              <p className="text-xs font-semibold uppercase text-slate-500">Global feature importance</p>
+              <ul className="mt-3 space-y-2">
+                {status.feature_importance.map((row) => (
+                  <li key={row.feature} className="flex items-center gap-3 text-sm">
+                    <span className="w-36 shrink-0 text-slate-700">{row.feature}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-indigo-500"
+                        style={{ width: `${Math.min(100, row.importance * 100)}%` }}
+                      />
+                    </div>
+                    <span className="w-12 text-right font-mono text-xs text-slate-500">
+                      {(row.importance * 100).toFixed(1)}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : status?.feature_labels?.length ? (
+            <p className="text-xs text-slate-500">
+              Model features: {status.feature_labels.join(', ')}. Train a model to see importances.
+            </p>
+          ) : null}
+
           <div className="flex flex-wrap gap-3">
             <button type="button" className="btn-secondary" disabled={trainBusy} onClick={runSynthetic}>
               {trainBusy ? 'Training…' : 'Train synthetic model'}

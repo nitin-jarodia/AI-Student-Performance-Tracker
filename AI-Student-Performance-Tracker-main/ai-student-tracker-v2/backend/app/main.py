@@ -1,11 +1,14 @@
 # main.py - FastAPI Application (JWT auth + ML + AI reports)
 
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import inspect
@@ -170,6 +173,63 @@ app.add_middleware(
 )
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+        request.state.request_id = request_id
+        started = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        response.headers["X-Request-ID"] = request_id
+        if request.url.path not in ("/health", "/ready"):
+            log.info(
+                "request method=%s path=%s status=%s duration_ms=%s request_id=%s",
+                request.method,
+                request.url.path,
+                response.status_code,
+                duration_ms,
+                request_id,
+            )
+        return response
+
+
+app.add_middleware(RequestLoggingMiddleware)
+
+
+def _init_sentry() -> None:
+    if not settings.SENTRY_DSN:
+        return
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            integrations=[FastApiIntegration()],
+            traces_sample_rate=0.1,
+            environment="production" if not settings.DEBUG else "development",
+        )
+        log.info("sentry_initialized")
+    except Exception as exc:
+        log.warning("sentry_init_failed err=%s", exc)
+
+
+_init_sentry()
+
+
 # ── Routers ────────────────────────────────────────────────────────────────
 
 app.include_router(auth.router)
@@ -222,3 +282,22 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy", "version": "4.0.0"}
+
+
+@app.get("/ready")
+def ready():
+    """Readiness probe — verifies PostgreSQL connectivity."""
+    from sqlalchemy import text
+
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ready", "database": "ok", "version": "4.0.0"}
+    except Exception as exc:
+        log.warning("readiness_check_failed err=%s", exc)
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not_ready", "database": "error", "detail": str(exc)},
+        )
+    finally:
+        db.close()
