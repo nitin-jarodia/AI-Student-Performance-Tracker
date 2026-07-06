@@ -36,6 +36,23 @@
 4. RBAC guards on every protected route (`require_teacher`, `require_admin`, etc.)
 5. Forced password change blocks app routes until `/auth/change-password`
 
+## CSRF threat model (cookie auth)
+
+| Environment | `COOKIE_SAME_SITE` | `COOKIE_SECURE` | Notes |
+|-------------|-------------------|-----------------|-------|
+| Local dev (default) | `lax` | `false` | Same-site Vite + API; classic CSRF mitigated for top-level navigations |
+| Production (Render + Vercel) | `none` | `true` | **Required** for cross-origin credentialed requests |
+
+Production uses **SameSite=None** so the Vercel frontend can send HttpOnly cookies to the Render API. That means cookies are included on cross-site requests when CORS allows the origin — **classic CSRF is not fully mitigated by SameSite alone**.
+
+Current mitigations:
+
+- CORS allowlist (explicit Vercel/localhost origins, not `*`)
+- HttpOnly cookies (not readable by XSS scripts)
+- State-changing routes require authenticated sessions; no open `Access-Control-Allow-Origin: *` with credentials
+
+**Not implemented:** double-submit CSRF tokens or `Origin`/`Referer` enforcement middleware. If you harden further, add CSRF tokens for cookie-based browser clients or enforce `Origin` checks on mutating routes. See `backend/.env.example` for cookie settings.
+
 ## ML pipeline
 
 See [ML.md](ML.md). Summary: features from DB rows → RandomForest (if trained on synthetic or rule-derived labels) → rule fallback → explainability payload. No ground-truth outcome labels exist in the dataset.
