@@ -38,7 +38,7 @@
 
 ## ML pipeline
 
-See [ML.md](ML.md). Summary: feature engineering → RandomForest (if trained) → rule fallback → explainability payload.
+See [ML.md](ML.md). Summary: features from DB rows → RandomForest (if trained on synthetic or rule-derived labels) → rule fallback → explainability payload. No ground-truth outcome labels exist in the dataset.
 
 ## Frontend data layer
 

@@ -1,4 +1,7 @@
 # ml/predict.py — Risk prediction with explainability and model registry
+#
+# Trained RandomForest models approximate rule-derived risk labels (see train_model.py).
+# When no model is loaded, inference uses the same rule-based heuristic directly.
 
 import json
 import os

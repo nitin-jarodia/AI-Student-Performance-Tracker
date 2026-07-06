@@ -29,8 +29,11 @@ from app.ml.predict import (
 
 def generate_training_data(n_samples=500):
     """
-    Generate synthetic training data based on student performance patterns.
-    In production, this would use real data from PostgreSQL.
+    Generate synthetic feature rows with ``numpy.random`` and assign labels from
+    synthetic risk profiles (LOW/MEDIUM/HIGH).
+
+    This is not real student data. Labels are constructed for bootstrap training
+    when no ground-truth outcome labels exist in the database.
     """
     np.random.seed(42)
 

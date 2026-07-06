@@ -35,8 +35,8 @@ A: Interpretable, trains on CPU in seconds on Render free tier, works with small
 **Q: How do you handle auth across Vercel + Render?**  
 A: Cross-origin HttpOnly cookies with `SameSite=None; Secure`, CORS allowlist for Vercel domains, credentials mode on axios.
 
-**Q: What would you improve next?**  
-A: Per-prediction SHAP values, WebSocket live notifications, higher test coverage on bulk upload and QR attendance, and Prometheus metrics.
+**Q: How is the ML model trained?**  
+A: RandomForest on synthetic `numpy.random` data or on DB features with labels from `rule_based_risk_class` — not ground-truth outcomes. See [ML.md](ML.md).
 
 **Q: Biggest security fix you made?**  
 A: Locked public admin registration, removed hardcoded secrets, forced password change for seeded admins, rate-limited login.
