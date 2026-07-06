@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.permissions import (
     assert_can_view_student,
@@ -97,13 +97,15 @@ def _compute_attendance_pct(db: Session, student_id: int) -> tuple[float, int]:
 
 @router.get("/summary/all", summary="Class-wide performance and risk summary")
 def get_all_summary(db: Session = Depends(get_db), _: CurrentUser = Depends(require_teacher)):
-    students = db.query(Student).all()
+    students = (
+        db.query(Student)
+        .options(selectinload(Student.performance), selectinload(Student.attendance))
+        .all()
+    )
     summary  = []
 
     for student in students:
-        records = db.query(Performance).filter(
-            Performance.student_id == student.id
-        ).all()
+        records = student.performance
 
         if records:
             scores = [(r.score / r.max_score) * 100 for r in records]
@@ -119,9 +121,7 @@ def get_all_summary(db: Session = Depends(get_db), _: CurrentUser = Depends(requ
             failed = 0
             trend = 0.0
 
-        att_records = db.query(Attendance).filter(
-            Attendance.student_id == student.id
-        ).all()
+        att_records = student.attendance
         if att_records:
             present = sum(1 for a in att_records if a.status in ("present", "late"))
             attendance = present / len(att_records) * 100

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.config import settings
 from app.database import get_db
@@ -121,13 +121,17 @@ def get_class_analytics(db: Session = Depends(get_db), _: CurrentUser = Depends(
     """
 
     def _load():
-        students = db.query(Student).all()
+        students = (
+            db.query(Student)
+            .options(selectinload(Student.performance), selectinload(Student.attendance))
+            .all()
+        )
         students_data = []
         primary_rows = []
 
         for student in students:
-            records = db.query(Performance).filter(Performance.student_id == student.id).all()
-            att_records = db.query(Attendance).filter(Attendance.student_id == student.id).all()
+            records = student.performance
+            att_records = student.attendance
 
             if records:
                 scores = [(r.score / r.max_score) * 100 for r in records]

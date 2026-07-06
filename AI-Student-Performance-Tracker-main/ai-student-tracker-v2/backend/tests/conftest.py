@@ -69,3 +69,14 @@ def admin_headers(client: TestClient) -> dict[str, str]:
 @pytest.fixture
 def unique_email() -> str:
     return f"user_{uuid.uuid4().hex[:10]}@example.com"
+
+
+@pytest.fixture
+def db_session():
+    from app.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
